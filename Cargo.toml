@@ -1,0 +1,89 @@
+[package]
+name = "rustwhy"
+version = "0.1.0"
+edition = "2021"
+description = "Unified Linux system diagnostics - understand WHY things happen"
+license = "GPL-3.0"
+authors = ["Ninso112"]
+repository = "https://github.com/Ninso112/rustwhy"
+homepage = "https://github.com/Ninso112/rustwhy"
+documentation = "https://github.com/Ninso112/rustwhy#readme"
+readme = "README.md"
+keywords = ["linux", "diagnostics", "system", "cli", "monitoring"]
+categories = ["command-line-utilities", "os::linux-apis"]
+
+[badges]
+github = { repository = "Ninso112/rustwhy", workflow = "CI" }
+
+[[bin]]
+name = "rustwhy"
+path = "src/main.rs"
+
+[dependencies]
+# CLI Framework
+clap = { version = "4", features = ["derive", "color", "suggestions", "wrap_help", "env"] }
+clap_complete = "4"
+
+# Async
+async-trait = "0.1"
+tokio = { version = "1", features = ["full"] }
+
+# System Information
+sysinfo = "0.31"
+procfs = "0.16"
+nix = { version = "0.29", features = ["process", "signal", "fs", "mount", "net"] }
+
+# Terminal UI
+colored = "2"
+indicatif = "0.17"
+tabled = "0.16"
+console = "0.15"
+
+# Network
+reqwest = { version = "0.12", features = ["blocking"] }
+dns-lookup = "2"
+surge-ping = "0.8"
+
+# Error Handling
+anyhow = "1"
+thiserror = "1"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Utilities
+chrono = { version = "0.4", features = ["serde"] }
+regex = "1"
+lazy_static = "1"
+walkdir = "2"
+bytesize = "1"
+humantime = "2"
+users = "0.11"
+which = "6"
+
+# GPU Support (optional)
+nvml-wrapper = { version = "0.10", optional = true }
+
+[features]
+default = []
+nvidia = ["nvml-wrapper"]
+all = ["nvidia"]
+
+[dev-dependencies]
+assert_cmd = "2"
+predicates = "3"
+tempfile = "3"
+mockall = "0.13"
+tokio = { version = "1", features = ["rt", "macros"] }
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

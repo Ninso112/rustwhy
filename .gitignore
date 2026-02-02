@@ -1,0 +1,14 @@
+/target
+**/*.rs.bk
+Cargo.lock
+.env
+.env.*
+*.pdb
+*.swp
+*.swo
+*~
+.DS_Store
+*.log
+coverage/
+*.profraw
+*.profdata

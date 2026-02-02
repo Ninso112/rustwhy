@@ -1,0 +1,8 @@
+# Avoid excessive complexity
+cognitive-complexity-threshold = 30
+
+# Prefer single-character names only for counters and similar
+single-char-binding-names-threshold = 4
+
+# Allow up to 10 type parameters
+type-complexity-threshold = 250
