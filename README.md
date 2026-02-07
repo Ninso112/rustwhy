@@ -40,6 +40,23 @@ RustWhy is a comprehensive system diagnostic tool that explains why your Linux s
 
 ## 📦 Installation
 
+### From AUR (Arch Linux)
+
+Arch Linux users can install RustWhy from the AUR using their favorite AUR helper:
+
+```bash
+# Using paru
+paru -S rustwhy-git
+
+# Using yay
+yay -S rustwhy-git
+
+# Or manually
+git clone https://aur.archlinux.org/rustwhy-git.git
+cd rustwhy-git
+makepkg -sri
+```
+
 ### From Source
 
 ```bash
@@ -230,7 +247,7 @@ If you find RustWhy useful, please consider giving it a star on GitHub!
 - [ ] Create interactive TUI mode
 - [x] Multi-vendor GPU support (NVIDIA/AMD/Intel) - **COMPLETED**
 - [ ] GPU per-process memory breakdown
-- [ ] Package for major distributions (AUR, deb, rpm)
+- [x] Package for major distributions (AUR, deb, rpm) - **AUR COMPLETED**
 - [ ] Add plugin system for custom modules
 
 ---
