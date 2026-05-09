@@ -30,12 +30,16 @@ impl DiagnosticModule for CpuModule {
         std::thread::sleep(std::time::Duration::from_millis(200));
         sys.refresh_all();
 
-        let total_cpu = sys.cpus().iter().map(|c| c.cpu_usage()).sum::<f32>() / sys.cpus().len() as f32;
+        let num_cpus = sys.cpus().len();
+        let total_cpu = if num_cpus > 0 {
+            sys.cpus().iter().map(|c| c.cpu_usage()).sum::<f32>() / num_cpus as f32
+        } else {
+            0.0
+        };
         let load_avg = sysinfo::System::load_average();
         let load_one = load_avg.one;
         let load_five = load_avg.five;
         let load_fifteen = load_avg.fifteen;
-        let num_cpus = sys.cpus().len() as f64;
 
         let mut report = DiagnosticReport::new(
             "cpu",
