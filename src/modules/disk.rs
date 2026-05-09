@@ -81,7 +81,7 @@ impl DiagnosticModule for DiskModule {
                 if depth >= 1 {
                     if let Some(parent) = entry.path().parent() {
                         let key = parent.display().to_string();
-                        *dir_sizes.entry(key).or_insert(0) += size;
+                        dir_sizes.entry(key).and_modify(|e| *e = e.saturating_add(size)).or_insert(size);
                     }
                 }
             }
