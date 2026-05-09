@@ -77,6 +77,13 @@ impl DiagnosticModule for BattModule {
                                 message: format!("Battery at {pct}% – very low"),
                                 details: Some("Plug in or suspend soon.".into()),
                             });
+                        } else if pct < 20 {
+                            report.add_finding(Finding {
+                                severity: Severity::Info,
+                                category: "batt".into(),
+                                message: format!("Battery at {pct}% – getting low"),
+                                details: Some("Consider plugging in soon.".into()),
+                            });
                         }
                     }
                 }
