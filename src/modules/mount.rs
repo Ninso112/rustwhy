@@ -83,7 +83,7 @@ impl DiagnosticModule for MountModule {
 
         report.add_metric(Metric {
             name: "Mount count".into(),
-            value: MetricValue::Integer(count as i64),
+            value: MetricValue::Integer(i64::try_from(count).unwrap_or(i64::MAX)),
             unit: None,
             threshold: None,
         });
@@ -109,7 +109,7 @@ impl DiagnosticModule for MountModule {
             let fstab_entries: usize = fstab.lines().filter(|l| !l.trim().is_empty() && !l.trim().starts_with('#')).count();
             report.add_metric(Metric {
                 name: "fstab entries".into(),
-                value: MetricValue::Integer(fstab_entries as i64),
+                value: MetricValue::Integer(i64::try_from(fstab_entries).unwrap_or(i64::MAX)),
                 unit: None,
                 threshold: None,
             });

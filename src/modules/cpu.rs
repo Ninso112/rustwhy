@@ -33,7 +33,10 @@ impl DiagnosticModule for CpuModule {
 
         let num_cpus = sys.cpus().len();
         let total_cpu = if num_cpus > 0 {
-            sys.cpus().iter().map(sysinfo::Cpu::cpu_usage).sum::<f32>() / num_cpus as f32
+            #[allow(clippy::cast_precision_loss)]
+            {
+                sys.cpus().iter().map(sysinfo::Cpu::cpu_usage).sum::<f32>() / num_cpus as f32
+            }
         } else {
             0.0
         };
@@ -67,7 +70,7 @@ impl DiagnosticModule for CpuModule {
         });
         report.add_metric(Metric {
             name: "CPU Cores".into(),
-            value: MetricValue::Integer(num_cpus as i64),
+            value: MetricValue::Integer(i64::try_from(num_cpus).unwrap_or(i64::MAX)),
             unit: None,
             threshold: None,
         });

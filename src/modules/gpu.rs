@@ -190,6 +190,7 @@ fn get_nvidia_stats(device: &GpuDevice) -> GpuStats {
 }
 
 /// Get GPU stats using AMD tools
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 fn get_amd_stats(device: &GpuDevice) -> GpuStats {
     let mut stats = GpuStats::default();
 
@@ -447,7 +448,7 @@ impl DiagnosticModule for GpuModule {
 
         report.add_metric(Metric {
             name: "GPU Devices Detected".into(),
-            value: MetricValue::Integer(devices.len() as i64),
+            value: MetricValue::Integer(i64::try_from(devices.len()).unwrap_or(i64::MAX)),
             unit: None,
             threshold: None,
         });
@@ -512,6 +513,7 @@ impl DiagnosticModule for GpuModule {
 
             // Memory
             if let (Some(used), Some(total)) = (stats.memory_used, stats.memory_total) {
+                #[allow(clippy::cast_precision_loss)]
                 let percent = if total > 0 {
                     (used as f64 / total as f64) * 100.0
                 } else {
@@ -595,7 +597,7 @@ impl DiagnosticModule for GpuModule {
             if let Some(clock) = stats.clock_speed {
                 report.add_metric(Metric {
                     name: format!("{gpu_label} - Clock Speed"),
-                    value: MetricValue::Integer(clock as i64),
+                    value: MetricValue::Integer(i64::try_from(clock).unwrap_or(i64::MAX)),
                     unit: Some("MHz".into()),
                     threshold: None,
                 });

@@ -36,7 +36,7 @@ impl DiagnosticModule for UsbModule {
                 let lines: Vec<&str> = out.lines().filter(|l| !l.trim().is_empty()).collect();
                 report.add_metric(Metric {
                     name: "USB devices (lsusb)".into(),
-                    value: MetricValue::Integer(lines.len() as i64),
+                    value: MetricValue::Integer(i64::try_from(lines.len()).unwrap_or(i64::MAX)),
                     unit: None,
                     threshold: None,
                 });
@@ -70,7 +70,7 @@ impl DiagnosticModule for UsbModule {
                     .count();
                 report.add_metric(Metric {
                     name: "USB devices (sysfs)".into(),
-                    value: MetricValue::Integer(count as i64),
+                    value: MetricValue::Integer(i64::try_from(count).unwrap_or(i64::MAX)),
                     unit: None,
                     threshold: None,
                 });

@@ -37,7 +37,7 @@ impl DiagnosticModule for SleepModule {
                 if blockers.len() > 1 {
                     report.add_metric(Metric {
                         name: "Active inhibitors".into(),
-                        value: MetricValue::Integer(blockers.len() as i64),
+                        value: MetricValue::Integer(i64::try_from(blockers.len()).unwrap_or(i64::MAX)),
                         unit: None,
                         threshold: None,
                     });

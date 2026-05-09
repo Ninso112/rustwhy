@@ -67,6 +67,7 @@ impl DiagnosticModule for MemModule {
         let mem_used_kb = mem_total_kb.saturating_sub(mem_avail_kb);
         let mem_used_bytes = mem_used_kb * 1024;
         let mem_total_bytes = mem_total_kb * 1024;
+        #[allow(clippy::cast_precision_loss)]
         let usage_pct = if mem_total_kb > 0 {
             (mem_used_kb as f64 / mem_total_kb as f64) * 100.0
         } else {
@@ -97,6 +98,7 @@ impl DiagnosticModule for MemModule {
         if config.extra_args.get("swap").is_none_or(|s| s == "true") {
             let swap_used_kb = swap_total_kb.saturating_sub(swap_free_kb);
             if swap_total_kb > 0 {
+                #[allow(clippy::cast_precision_loss)]
                 let swap_pct = (swap_used_kb as f64 / swap_total_kb as f64) * 100.0;
                 report.add_metric(Metric {
                     name: "Swap used".into(),

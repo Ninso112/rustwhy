@@ -75,15 +75,16 @@ impl DiagnosticModule for FanModule {
         for (label, rpm) in &fans {
             report.add_metric(Metric {
                 name: label.clone(),
-                value: MetricValue::Integer(*rpm as i64),
+                value: MetricValue::Integer(i64::try_from(*rpm).unwrap_or(i64::MAX)),
                 unit: Some("RPM".into()),
                 threshold: None,
             });
         }
 
         if let Some(thresh) = threshold {
+            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
             for (label, rpm) in &fans {
-                if *rpm > thresh as u64 * 100 {
+                if *rpm > (thresh as u64).saturating_mul(100) {
                     report.add_finding(Finding {
                         severity: Severity::Info,
                         category: "fan".into(),

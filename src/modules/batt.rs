@@ -84,7 +84,7 @@ impl DiagnosticModule for BattModule {
                         if let Ok(u) = energy.trim().parse::<u64>() {
                             report.add_metric(Metric {
                                 name: format!("{name} energy_now"),
-                                value: MetricValue::Integer(u as i64),
+                                value: MetricValue::Integer(i64::try_from(u).unwrap_or(i64::MAX)),
                                 unit: Some("µWh".into()),
                                 threshold: None,
                             });
@@ -94,7 +94,7 @@ impl DiagnosticModule for BattModule {
                         if let Ok(u) = power.trim().parse::<u64>() {
                             report.add_metric(Metric {
                                 name: format!("{name} power_now"),
-                                value: MetricValue::Integer(u as i64),
+                                value: MetricValue::Integer(i64::try_from(u).unwrap_or(i64::MAX)),
                                 unit: Some("µW".into()),
                                 threshold: None,
                             });

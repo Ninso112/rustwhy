@@ -56,6 +56,7 @@ impl DiagnosticModule for NetModule {
                 }
             }
             if !latency_ms.is_empty() {
+                #[allow(clippy::cast_precision_loss)]
                 let avg = latency_ms.iter().sum::<f64>() / latency_ms.len() as f64;
                 report.add_metric(Metric {
                     name: "Ping latency (avg)".into(),
@@ -134,13 +135,13 @@ impl DiagnosticModule for NetModule {
                         if rx_bytes > 0 || tx_bytes > 0 {
                             report.add_metric(Metric {
                                 name: format!("{name} rx"),
-                                value: MetricValue::Integer(rx_bytes as i64),
+                                value: MetricValue::Integer(i64::try_from(rx_bytes).unwrap_or(i64::MAX)),
                                 unit: Some("bytes".into()),
                                 threshold: None,
                             });
                             report.add_metric(Metric {
                                 name: format!("{name} tx"),
-                                value: MetricValue::Integer(tx_bytes as i64),
+                                value: MetricValue::Integer(i64::try_from(tx_bytes).unwrap_or(i64::MAX)),
                                 unit: Some("bytes".into()),
                                 threshold: None,
                             });
