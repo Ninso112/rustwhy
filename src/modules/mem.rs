@@ -10,6 +10,7 @@ use std::path::Path;
 use std::sync::Arc;
 use sysinfo::System;
 
+#[must_use] 
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(MemModule)
 }
@@ -93,7 +94,7 @@ impl DiagnosticModule for MemModule {
                 critical: 95.0,
             }),
         });
-        if config.extra_args.get("swap").map(|s| s == "true").unwrap_or(true) {
+        if config.extra_args.get("swap").is_none_or(|s| s == "true") {
             let swap_used_kb = swap_total_kb.saturating_sub(swap_free_kb);
             if swap_total_kb > 0 {
                 let swap_pct = (swap_used_kb as f64 / swap_total_kb as f64) * 100.0;
@@ -107,7 +108,7 @@ impl DiagnosticModule for MemModule {
                     report.add_finding(Finding {
                         severity: Severity::Warning,
                         category: "swap".into(),
-                        message: format!("High swap usage ({:.0}%); system may be under memory pressure.", swap_pct),
+                        message: format!("High swap usage ({swap_pct:.0}%); system may be under memory pressure."),
                         details: Some("Consider adding RAM or reducing memory-hungry processes.".into()),
                     });
                 }
@@ -127,7 +128,7 @@ impl DiagnosticModule for MemModule {
         let mut sys = System::new_all();
         sys.refresh_all();
         let mut processes: Vec<_> = sys.processes().iter().collect();
-        processes.sort_by(|a, b| b.1.memory().cmp(&a.1.memory()));
+        processes.sort_by_key(|b| std::cmp::Reverse(b.1.memory()));
         let top_n = config.top_n;
         for (pid, proc_ref) in processes.into_iter().take(top_n) {
             let rss = proc_ref.memory();

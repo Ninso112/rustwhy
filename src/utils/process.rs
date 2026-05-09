@@ -5,11 +5,11 @@ use std::collections::HashMap;
 
 /// Get process name from PID by reading /proc/[pid]/comm (or cmdline fallback).
 pub fn process_name(pid: u32) -> Result<String> {
-    let comm_path = format!("/proc/{}/comm", pid);
+    let comm_path = format!("/proc/{pid}/comm");
     let name = std::fs::read_to_string(&comm_path)
         .map(|s| s.trim_end_matches('\n').to_string())
         .or_else(|_| {
-            let cmdline = format!("/proc/{}/cmdline", pid);
+            let cmdline = format!("/proc/{pid}/cmdline");
             std::fs::read_to_string(&cmdline).map(|s| {
                 s.replace('\0', " ")
                     .split_whitespace()
@@ -18,12 +18,12 @@ pub fn process_name(pid: u32) -> Result<String> {
                     .to_string()
             })
         })?;
-    Ok(if name.is_empty() { format!("[pid {}]", pid) } else { name })
+    Ok(if name.is_empty() { format!("[pid {pid}]") } else { name })
 }
 
 /// Get process user (UID) and optionally resolve to username.
 pub fn process_user(pid: u32) -> Result<u32> {
-    let status_path = format!("/proc/{}/status", pid);
+    let status_path = format!("/proc/{pid}/status");
     let content = std::fs::read_to_string(&status_path)?;
     for line in content.lines() {
         if line.starts_with("Uid:") {
@@ -38,7 +38,7 @@ pub fn process_user(pid: u32) -> Result<u32> {
 
 /// Parse key-value pairs from /proc/[pid]/status.
 pub fn parse_status(pid: u32) -> Result<HashMap<String, String>> {
-    let path = format!("/proc/{}/status", pid);
+    let path = format!("/proc/{pid}/status");
     let content = std::fs::read_to_string(&path)?;
     let mut map = HashMap::new();
     for line in content.lines() {

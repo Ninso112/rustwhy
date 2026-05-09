@@ -1,4 +1,4 @@
-//! RustWhy - Unified Linux System Diagnostics
+//! `RustWhy` - Unified Linux System Diagnostics
 //!
 //! Library exports for use as a dependency or for testing.
 

@@ -9,6 +9,7 @@ use async_trait::async_trait;
 use std::path::Path;
 use std::sync::Arc;
 
+#[must_use] 
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(SleepModule)
 }
@@ -28,7 +29,7 @@ impl DiagnosticModule for SleepModule {
     async fn run(&self, config: &ModuleConfig) -> Result<DiagnosticReport> {
         let mut report = DiagnosticReport::new("sleep", "Sleep/suspend diagnostics");
 
-        if config.extra_args.get("inhibitors").map(|s| s == "true").unwrap_or(true)
+        if config.extra_args.get("inhibitors").is_none_or(|s| s == "true")
             && command_exists("systemd-inhibit")
         {
             if let Ok(out) = run_cmd(&["systemd-inhibit", "--list", "--no-pager"]) {

@@ -11,12 +11,12 @@ pub fn write_report<W: Write>(w: &mut W, report: &DiagnosticReport, use_color: b
     if use_color {
         let _ = writeln!(w, "\n{}", title.bright_cyan().bold());
     } else {
-        let _ = writeln!(w, "\n{}", title);
+        let _ = writeln!(w, "\n{title}");
     }
     let _ = writeln!(w, "{}", "═".repeat(60));
 
     let status_line = format!("Overall Status: {} - {}", severity_icon(report.overall_severity, use_color), report.summary);
-    let _ = writeln!(w, "\n{}", status_line);
+    let _ = writeln!(w, "\n{status_line}");
 
     if !report.metrics.is_empty() {
         let _ = writeln!(w);
@@ -27,7 +27,7 @@ pub fn write_report<W: Write>(w: &mut W, report: &DiagnosticReport, use_color: b
             if use_color {
                 let _ = writeln!(w, "{}", line.bright_white());
             } else {
-                let _ = writeln!(w, "{}", line);
+                let _ = writeln!(w, "{line}");
             }
         }
     }
@@ -37,16 +37,16 @@ pub fn write_report<W: Write>(w: &mut W, report: &DiagnosticReport, use_color: b
         for f in &report.findings {
             let icon = severity_icon(f.severity, use_color);
             let line1 = format!("   ┌─ Finding: {}", f.message);
-            let _ = writeln!(w, "{}", line1);
+            let _ = writeln!(w, "{line1}");
             if let Some(ref d) = f.details {
-                let line2 = format!("   │  → {}", d);
+                let line2 = format!("   │  → {d}");
                 if use_color {
                     let _ = writeln!(w, "{}", line2.dimmed());
                 } else {
-                    let _ = writeln!(w, "{}", line2);
+                    let _ = writeln!(w, "{line2}");
                 }
             }
-            let _ = writeln!(w, "   └─ {}", icon);
+            let _ = writeln!(w, "   └─ {icon}");
         }
     }
 
@@ -58,7 +58,7 @@ pub fn write_report<W: Write>(w: &mut W, report: &DiagnosticReport, use_color: b
             if use_color {
                 let _ = writeln!(w, "{}", line.bright_yellow());
             } else {
-                let _ = writeln!(w, "{}", line);
+                let _ = writeln!(w, "{line}");
             }
             if let Some(ref cmd) = r.command {
                 let _ = writeln!(w, "      $ {}", cmd.dimmed());
@@ -76,13 +76,13 @@ fn severity_icon(s: Severity, _use_color: bool) -> String {
         Severity::Warning => ("⚠️ ", "WARNING"),
         Severity::Critical => ("🔴", "CRITICAL"),
     };
-    format!("{} {}", icon, label)
+    format!("{icon} {label}")
 }
 
 fn format_metric_value(v: &MetricValue) -> String {
     match v {
         MetricValue::Integer(n) => n.to_string(),
-        MetricValue::Float(f) => format!("{:.2}", f),
+        MetricValue::Float(f) => format!("{f:.2}"),
         MetricValue::Text(s) => s.clone(),
         MetricValue::Boolean(b) => b.to_string(),
         MetricValue::List(l) => l.join(", "),

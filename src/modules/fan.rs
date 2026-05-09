@@ -9,6 +9,7 @@ use async_trait::async_trait;
 use std::path::Path;
 use std::sync::Arc;
 
+#[must_use] 
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(FanModule)
 }
@@ -86,7 +87,7 @@ impl DiagnosticModule for FanModule {
                     report.add_finding(Finding {
                         severity: Severity::Info,
                         category: "fan".into(),
-                        message: format!("{} running at {} RPM (above {}°C threshold)", label, rpm, thresh),
+                        message: format!("{label} running at {rpm} RPM (above {thresh}°C threshold)"),
                         details: Some("High fan speed usually indicates thermal load.".into()),
                     });
                 }

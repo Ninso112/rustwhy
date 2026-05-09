@@ -8,6 +8,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use std::sync::Arc;
 
+#[must_use] 
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(NetModule)
 }
@@ -25,7 +26,7 @@ impl DiagnosticModule for NetModule {
     }
 
     async fn run(&self, config: &ModuleConfig) -> Result<DiagnosticReport> {
-        let host = config.extra_args.get("host").map(String::as_str).unwrap_or("8.8.8.8");
+        let host = config.extra_args.get("host").map_or("8.8.8.8", String::as_str);
         let mut report = DiagnosticReport::new("net", "Network diagnostics");
 
         report.add_metric(Metric {
@@ -69,7 +70,7 @@ impl DiagnosticModule for NetModule {
                     report.add_finding(Finding {
                         severity: Severity::Warning,
                         category: "latency".into(),
-                        message: format!("High latency to {} ({:.0} ms avg)", host, avg),
+                        message: format!("High latency to {host} ({avg:.0} ms avg)"),
                         details: Some("Check WiFi, cable, or ISP.".into()),
                     });
                 }
@@ -77,7 +78,7 @@ impl DiagnosticModule for NetModule {
                 report.add_finding(Finding {
                     severity: Severity::Warning,
                     category: "connectivity".into(),
-                    message: format!("Ping to {} failed; host may be unreachable.", host),
+                    message: format!("Ping to {host} failed; host may be unreachable."),
                     details: Some("Check firewall, routing, and DNS.".into()),
                 });
             }
@@ -101,7 +102,7 @@ impl DiagnosticModule for NetModule {
                 report.add_finding(Finding {
                     severity: Severity::Ok,
                     category: "dns".into(),
-                    message: format!("DNS resolution for {} OK", hostname),
+                    message: format!("DNS resolution for {hostname} OK"),
                     details: Some(out.lines().next().unwrap_or("").to_string()),
                 });
             }
@@ -109,7 +110,7 @@ impl DiagnosticModule for NetModule {
             report.add_finding(Finding {
                 severity: Severity::Ok,
                 category: "dns".into(),
-                message: format!("DNS resolution for {} OK", hostname),
+                message: format!("DNS resolution for {hostname} OK"),
                 details: None,
             });
         } else {
@@ -132,13 +133,13 @@ impl DiagnosticModule for NetModule {
                         let tx_bytes: u64 = parts[9].parse().unwrap_or(0);
                         if rx_bytes > 0 || tx_bytes > 0 {
                             report.add_metric(Metric {
-                                name: format!("{} rx", name),
+                                name: format!("{name} rx"),
                                 value: MetricValue::Integer(rx_bytes as i64),
                                 unit: Some("bytes".into()),
                                 threshold: None,
                             });
                             report.add_metric(Metric {
-                                name: format!("{} tx", name),
+                                name: format!("{name} tx"),
                                 value: MetricValue::Integer(tx_bytes as i64),
                                 unit: Some("bytes".into()),
                                 threshold: None,

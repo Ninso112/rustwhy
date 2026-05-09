@@ -32,6 +32,7 @@ use crate::core::traits::DiagnosticModule;
 use std::sync::Arc;
 
 /// Return the module for the given name, if any.
+#[must_use] 
 pub fn get_module(name: &str) -> Option<Arc<dyn DiagnosticModule>> {
     match name {
         "boot" => Some(boot_module()),
@@ -52,6 +53,7 @@ pub fn get_module(name: &str) -> Option<Arc<dyn DiagnosticModule>> {
 }
 
 /// Return all diagnostic modules in a fixed order.
+#[must_use] 
 pub fn all_modules() -> Vec<Arc<dyn DiagnosticModule>> {
     vec![
         boot_module(),

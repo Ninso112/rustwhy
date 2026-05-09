@@ -21,12 +21,13 @@ pub fn run_cmd(args: &[&str]) -> Result<String> {
 }
 
 /// Run a command with a timeout. Returns stdout as string.
-/// Note: timeout is not enforced on all platforms; prefer run_cmd for simple cases.
+/// Note: timeout is not enforced on all platforms; prefer `run_cmd` for simple cases.
 pub fn run_cmd_timeout(args: &[&str], _timeout: Duration) -> Result<String> {
     run_cmd(args)
 }
 
 /// Check if a command is available in PATH.
+#[must_use] 
 pub fn command_exists(name: &str) -> bool {
     which::which(name).is_ok()
 }

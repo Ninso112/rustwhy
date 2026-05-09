@@ -11,6 +11,7 @@ use std::path::Path;
 use std::sync::Arc;
 use walkdir::WalkDir;
 
+#[must_use] 
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(DiskModule)
 }
@@ -28,7 +29,7 @@ impl DiagnosticModule for DiskModule {
     }
 
     async fn run(&self, config: &ModuleConfig) -> Result<DiagnosticReport> {
-        let path_str = config.extra_args.get("path").map(String::as_str).unwrap_or("/");
+        let path_str = config.extra_args.get("path").map_or("/", String::as_str);
         let path = Path::new(path_str);
         let depth: usize = config
             .extra_args
@@ -37,7 +38,7 @@ impl DiagnosticModule for DiskModule {
             .unwrap_or(3);
         let _older_than_days: Option<u64> = config.extra_args.get("old").and_then(|s| s.parse().ok());
         let larger_than_bytes: Option<u64> = config.extra_args.get("large").and_then(|s| parse_size_human(s));
-        let include_hidden = config.extra_args.get("hidden").map(|s| s == "true").unwrap_or(false);
+        let include_hidden = config.extra_args.get("hidden").is_some_and(|s| s == "true");
 
         let mut report = DiagnosticReport::new("disk", "Disk space analysis");
 
@@ -62,14 +63,8 @@ impl DiagnosticModule for DiskModule {
             .into_iter()
             .filter_entry(|e| include_hidden || !e.file_name().to_string_lossy().starts_with('.'))
         {
-            let entry = match entry {
-                Ok(e) => e,
-                Err(_) => continue,
-            };
-            let meta = match entry.metadata() {
-                Ok(m) => m,
-                Err(_) => continue,
-            };
+            let Ok(entry) = entry else { continue };
+            let Ok(meta) = entry.metadata() else { continue };
             if meta.is_file() {
                 let size = meta.len();
                 total_size = total_size.saturating_add(size);
@@ -100,7 +95,7 @@ impl DiagnosticModule for DiskModule {
             threshold: None,
         });
 
-        large_files.sort_by(|a, b| b.1.cmp(&a.1));
+        large_files.sort_by_key(|b| std::cmp::Reverse(b.1));
         for (fp, size) in large_files.into_iter().take(config.top_n) {
             report.add_finding(Finding {
                 severity: Severity::Info,
@@ -111,7 +106,7 @@ impl DiagnosticModule for DiskModule {
         }
 
         let mut dir_vec: Vec<_> = dir_sizes.into_iter().collect();
-        dir_vec.sort_by(|a, b| b.1.cmp(&a.1));
+        dir_vec.sort_by_key(|b| std::cmp::Reverse(b.1));
         for (dir_path, size) in dir_vec.into_iter().take(10) {
             if size > 100 * 1024 * 1024 {
                 report.add_finding(Finding {

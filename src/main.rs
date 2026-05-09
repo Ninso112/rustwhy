@@ -1,4 +1,4 @@
-//! RustWhy - Unified Linux System Diagnostics
+//! `RustWhy` - Unified Linux System Diagnostics
 //!
 //! Entry point: parse CLI, run selected module(s), output report.
 
@@ -22,7 +22,7 @@ fn main() -> anyhow::Result<()> {
                 Shell::Zsh => rustwhy::cli::print_completion(clap_complete::Shell::Zsh, &mut cmd),
                 Shell::Fish => rustwhy::cli::print_completion(clap_complete::Shell::Fish, &mut cmd),
                 Shell::PowerShell => {
-                    rustwhy::cli::print_completion(clap_complete::Shell::PowerShell, &mut cmd)
+                    rustwhy::cli::print_completion(clap_complete::Shell::PowerShell, &mut cmd);
                 }
             }
             return Ok(());
@@ -34,7 +34,7 @@ fn main() -> anyhow::Result<()> {
     }
 
     let (module_name, config) = command_to_module_config(&cli)?;
-    let module = get_module(&module_name).ok_or_else(|| anyhow::anyhow!("Unknown module: {}", module_name))?;
+    let module = get_module(&module_name).ok_or_else(|| anyhow::anyhow!("Unknown module: {module_name}"))?;
     let rt = tokio::runtime::Runtime::new()?;
     let report = rt.block_on(run_module(module, &config))?;
 
@@ -169,7 +169,7 @@ fn run_all_and_output(cli: &Cli, format: &rustwhy::cli::OutputFormat) -> anyhow:
             }
         }
         let json = serde_json::to_string_pretty(&reports)?;
-        writeln!(stdout, "{}", json)?;
+        writeln!(stdout, "{json}")?;
     } else {
         for module in &modules {
             match rt.block_on(run_module(module.clone(), &config)) {

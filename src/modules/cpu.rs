@@ -8,6 +8,7 @@ use async_trait::async_trait;
 use std::sync::Arc;
 use sysinfo::System;
 
+#[must_use] 
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(CpuModule)
 }
@@ -32,7 +33,7 @@ impl DiagnosticModule for CpuModule {
 
         let num_cpus = sys.cpus().len();
         let total_cpu = if num_cpus > 0 {
-            sys.cpus().iter().map(|c| c.cpu_usage()).sum::<f32>() / num_cpus as f32
+            sys.cpus().iter().map(sysinfo::Cpu::cpu_usage).sum::<f32>() / num_cpus as f32
         } else {
             0.0
         };
@@ -54,13 +55,13 @@ impl DiagnosticModule for CpuModule {
 
         report.add_metric(Metric {
             name: "Load Average".into(),
-            value: MetricValue::Text(format!("{:.2} / {:.2} / {:.2} (1m / 5m / 15m)", load_one, load_five, load_fifteen)),
+            value: MetricValue::Text(format!("{load_one:.2} / {load_five:.2} / {load_fifteen:.2} (1m / 5m / 15m)")),
             unit: None,
             threshold: None,
         });
         report.add_metric(Metric {
             name: "CPU Usage".into(),
-            value: MetricValue::Float(total_cpu as f64),
+            value: MetricValue::Float(f64::from(total_cpu)),
             unit: Some("%".into()),
             threshold: Some(crate::core::report::Threshold { warning: 70.0, critical: 90.0 }),
         });
@@ -83,13 +84,13 @@ impl DiagnosticModule for CpuModule {
             }
             let name = proc_ref.name().to_string_lossy().into_owned();
             let mem_kb = proc_ref.memory() / 1024;
-            let uid = proc_ref.user_id().map(|u| u.to_string()).unwrap_or_else(|| "?".into());
+            let uid = proc_ref.user_id().map_or_else(|| "?".into(), |u| u.to_string());
             let finding_msg = format!("{} (PID {}) consuming {:.1}% CPU", name, pid.as_u32(), usage);
             report.add_finding(Finding {
                 severity: if usage > 50.0 { Severity::Warning } else { Severity::Info },
                 category: "process".into(),
                 message: finding_msg.clone(),
-                details: Some(format!("Memory: {} KB, User: {}", mem_kb, uid)),
+                details: Some(format!("Memory: {mem_kb} KB, User: {uid}")),
             });
         }
 
