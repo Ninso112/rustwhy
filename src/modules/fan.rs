@@ -84,12 +84,13 @@ impl DiagnosticModule for FanModule {
 
         if let Some(thresh) = threshold {
             #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            let rpm_threshold = (thresh as u64).saturating_mul(100);
             for (label, rpm) in &fans {
-                if *rpm > (thresh as u64).saturating_mul(100) {
+                if *rpm > rpm_threshold {
                     report.add_finding(Finding {
                         severity: Severity::Info,
                         category: "fan".into(),
-                        message: format!("{label} running at {rpm} RPM (above {thresh}°C threshold)"),
+                        message: format!("{label} running at {rpm} RPM (above {rpm_threshold} RPM threshold)"),
                         details: Some("High fan speed usually indicates thermal load.".into()),
                     });
                 }
