@@ -19,6 +19,7 @@ use clap::{Parser, Subcommand, ValueEnum};
                   rustwhy all                  # Run all diagnostics\n\n\
                   For more information, visit: https://github.com/Ninso112/rustwhy"
 )]
+#[allow(clippy::struct_excessive_bools)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,

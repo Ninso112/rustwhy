@@ -6,6 +6,11 @@ use anyhow::Result;
 use std::sync::Arc;
 
 /// Runs a single diagnostic module and returns its report.
+///
+/// # Errors
+///
+/// Returns an error if the module is not available on this system
+/// or if the module's `run` method returns an error.
 pub async fn run_module(
     module: Arc<dyn DiagnosticModule>,
     config: &ModuleConfig,

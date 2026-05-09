@@ -5,6 +5,11 @@ use std::process::Command;
 use std::time::Duration;
 
 /// Run a command and return stdout as a string. Stderr is captured but not returned.
+///
+/// # Errors
+///
+/// Returns an error if the command fails to execute, exits with non-zero status,
+/// or produces non-UTF-8 output.
 pub fn run_cmd(args: &[&str]) -> Result<String> {
     let (binary, rest) = args
         .split_first()
@@ -22,6 +27,10 @@ pub fn run_cmd(args: &[&str]) -> Result<String> {
 
 /// Run a command with a timeout. Returns stdout as string.
 /// Note: timeout is not enforced on all platforms; prefer `run_cmd` for simple cases.
+///
+/// # Errors
+///
+/// Returns an error if the underlying `run_cmd` call fails.
 pub fn run_cmd_timeout(args: &[&str], _timeout: Duration) -> Result<String> {
     run_cmd(args)
 }

@@ -4,6 +4,10 @@ use anyhow::Result;
 use std::path::Path;
 
 /// Read file contents as string if path exists and is readable.
+///
+/// # Errors
+///
+/// Returns an error if the file cannot be read (e.g. permission denied or I/O error).
 pub fn read_file_optional(path: &Path) -> Result<Option<String>> {
     if path.exists() {
         Ok(Some(std::fs::read_to_string(path)?))
@@ -13,6 +17,10 @@ pub fn read_file_optional(path: &Path) -> Result<Option<String>> {
 }
 
 /// Read first line of a file (e.g. /sys files).
+///
+/// # Errors
+///
+/// Returns an error if the file cannot be read.
 pub fn read_first_line(path: &Path) -> Result<Option<String>> {
     if let Some(content) = read_file_optional(path)? {
         Ok(content.lines().next().map(String::from))
@@ -22,6 +30,10 @@ pub fn read_first_line(path: &Path) -> Result<Option<String>> {
 }
 
 /// Check if path is a directory and list entries (non-recursive).
+///
+/// # Errors
+///
+/// Returns an error if the directory cannot be read.
 pub fn list_dir(path: &Path) -> Result<Vec<std::path::PathBuf>> {
     let mut entries = Vec::new();
     if path.is_dir() {

@@ -4,6 +4,10 @@ use anyhow::Result;
 use std::collections::HashMap;
 
 /// Get process name from PID by reading /proc/[pid]/comm (or cmdline fallback).
+///
+/// # Errors
+///
+/// Returns an error if the process information cannot be read.
 pub fn process_name(pid: u32) -> Result<String> {
     let comm_path = format!("/proc/{pid}/comm");
     let name = std::fs::read_to_string(&comm_path)
@@ -22,6 +26,10 @@ pub fn process_name(pid: u32) -> Result<String> {
 }
 
 /// Get process user (UID) and optionally resolve to username.
+///
+/// # Errors
+///
+/// Returns an error if `/proc/{pid}/status` cannot be read.
 pub fn process_user(pid: u32) -> Result<u32> {
     let status_path = format!("/proc/{pid}/status");
     let content = std::fs::read_to_string(&status_path)?;
@@ -37,6 +45,10 @@ pub fn process_user(pid: u32) -> Result<u32> {
 }
 
 /// Parse key-value pairs from /proc/[pid]/status.
+///
+/// # Errors
+///
+/// Returns an error if `/proc/{pid}/status` cannot be read.
 pub fn parse_status(pid: u32) -> Result<HashMap<String, String>> {
     let path = format!("/proc/{pid}/status");
     let content = std::fs::read_to_string(&path)?;

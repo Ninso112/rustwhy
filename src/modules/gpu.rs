@@ -427,6 +427,7 @@ impl DiagnosticModule for GpuModule {
         "Analyze GPU utilization and memory across all vendors (NVIDIA/AMD/Intel)"
     }
 
+    #[allow(clippy::too_many_lines)]
     async fn run(&self, config: &ModuleConfig) -> Result<DiagnosticReport> {
         let mut report = DiagnosticReport::new("gpu", "GPU diagnostics");
 

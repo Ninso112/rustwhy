@@ -29,6 +29,26 @@ fn read_meminfo() -> Result<std::collections::HashMap<String, u64>> {
     Ok(map)
 }
 
+fn add_top_memory_processes(report: &mut DiagnosticReport, top_n: usize) {
+    let mut sys = System::new_all();
+    sys.refresh_all();
+    let mut processes: Vec<_> = sys.processes().iter().collect();
+    processes.sort_by_key(|b| std::cmp::Reverse(b.1.memory()));
+    for (pid, proc_ref) in processes.into_iter().take(top_n) {
+        let rss = proc_ref.memory();
+        if rss < 50 * 1024 * 1024 {
+            continue;
+        }
+        let name = proc_ref.name().to_string_lossy().into_owned();
+        report.add_finding(Finding {
+            severity: Severity::Info,
+            category: "process".into(),
+            message: format!("{} (PID {}) uses {}", name, pid.as_u32(), format_bytes(rss)),
+            details: Some("RSS (resident set size)".into()),
+        });
+    }
+}
+
 #[async_trait]
 impl DiagnosticModule for MemModule {
     fn name(&self) -> &'static str {
@@ -126,25 +146,7 @@ impl DiagnosticModule for MemModule {
             });
         }
 
-        // Top processes by memory (RSS)
-        let mut sys = System::new_all();
-        sys.refresh_all();
-        let mut processes: Vec<_> = sys.processes().iter().collect();
-        processes.sort_by_key(|b| std::cmp::Reverse(b.1.memory()));
-        let top_n = config.top_n;
-        for (pid, proc_ref) in processes.into_iter().take(top_n) {
-            let rss = proc_ref.memory();
-            if rss < 50 * 1024 * 1024 {
-                continue;
-            }
-            let name = proc_ref.name().to_string_lossy().into_owned();
-            report.add_finding(Finding {
-                severity: Severity::Info,
-                category: "process".into(),
-                message: format!("{} (PID {}) uses {}", name, pid.as_u32(), format_bytes(rss)),
-                details: Some("RSS (resident set size)".into()),
-            });
-        }
+        add_top_memory_processes(&mut report, config.top_n);
 
         if usage_pct > 85.0 {
             report.add_recommendation(Recommendation {
