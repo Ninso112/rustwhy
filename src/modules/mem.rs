@@ -10,6 +10,7 @@ use std::path::Path;
 use std::sync::Arc;
 use sysinfo::System;
 
+/// Returns the explain memory consumption and identify top consumers diagnostic module.
 #[must_use] 
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(MemModule)

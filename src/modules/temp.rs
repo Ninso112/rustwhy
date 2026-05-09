@@ -9,6 +9,7 @@ use async_trait::async_trait;
 use std::path::Path;
 use std::sync::Arc;
 
+/// Returns the analyze temperatures and thermal throttling diagnostic module.
 #[must_use] 
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(TempModule)

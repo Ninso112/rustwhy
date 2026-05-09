@@ -9,6 +9,7 @@ use async_trait::async_trait;
 use regex::Regex;
 use std::sync::Arc;
 
+/// Returns the analyze boot performance and slow services via systemd diagnostic module.
 #[must_use] 
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(BootModule)

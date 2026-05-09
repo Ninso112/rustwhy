@@ -11,6 +11,7 @@ use std::path::Path;
 use std::sync::Arc;
 use walkdir::WalkDir;
 
+/// Returns the analyze disk space usage and find large or old files diagnostic module.
 #[must_use] 
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(DiskModule)

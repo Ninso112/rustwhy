@@ -8,6 +8,7 @@ use async_trait::async_trait;
 use std::sync::Arc;
 use sysinfo::System;
 
+/// Returns the explain high CPU usage and identify top consumers diagnostic module.
 #[must_use] 
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(CpuModule)
@@ -92,7 +93,7 @@ impl DiagnosticModule for CpuModule {
             report.add_finding(Finding {
                 severity: if usage > 50.0 { Severity::Warning } else { Severity::Info },
                 category: "process".into(),
-                message: finding_msg.clone(),
+                message: finding_msg,
                 details: Some(format!("Memory: {mem_kb} KB, User: {uid}")),
             });
         }

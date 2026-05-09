@@ -8,6 +8,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use std::sync::Arc;
 
+/// Returns the diagnose network issues: connectivity, DNS, interfaces diagnostic module.
 #[must_use] 
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(NetModule)
