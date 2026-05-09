@@ -26,13 +26,51 @@ pub fn run_cmd(args: &[&str]) -> Result<String> {
 }
 
 /// Run a command with a timeout. Returns stdout as string.
-/// Note: timeout is not enforced on all platforms; prefer `run_cmd` for simple cases.
 ///
 /// # Errors
 ///
-/// Returns an error if the underlying `run_cmd` call fails.
-pub fn run_cmd_timeout(args: &[&str], _timeout: Duration) -> Result<String> {
-    run_cmd(args)
+/// Returns an error if the command fails, times out, or produces non-UTF-8 output.
+pub fn run_cmd_timeout(args: &[&str], timeout: Duration) -> Result<String> {
+    let (binary, rest) = args
+        .split_first()
+        .context("run_cmd_timeout requires at least one argument")?;
+    let mut child = Command::new(binary)
+        .args(rest)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .context("Failed to execute command")?;
+
+    let start = std::time::Instant::now();
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                let stdout = child.stdout.take().map_or(Vec::new(), |mut p| {
+                    let mut buf = Vec::new();
+                    let _ = std::io::Read::read_to_end(&mut p, &mut buf);
+                    buf
+                });
+                if !status.success() {
+                    let stderr = child.stderr.take().map_or(String::new(), |mut p| {
+                        let mut buf = String::new();
+                        let _ = std::io::Read::read_to_string(&mut p, &mut buf);
+                        buf
+                    });
+                    anyhow::bail!("Command failed: {} {}", args.join(" "), stderr);
+                }
+                return String::from_utf8(stdout)
+                    .context("Command output was not valid UTF-8");
+            }
+            Ok(None) => {
+                if start.elapsed() >= timeout {
+                    let _ = child.kill();
+                    anyhow::bail!("Command timed out after {:?}", timeout);
+                }
+                std::thread::sleep(Duration::from_millis(50));
+            }
+            Err(e) => return Err(e.into()),
+        }
+    }
 }
 
 /// Check if a command is available in PATH.
