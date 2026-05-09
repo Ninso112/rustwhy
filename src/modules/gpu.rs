@@ -528,7 +528,11 @@ impl DiagnosticModule for GpuModule {
 
             // Memory
             if let (Some(used), Some(total)) = (stats.memory_used, stats.memory_total) {
-                let percent = (used as f64 / total as f64) * 100.0;
+                let percent = if total > 0 {
+                    (used as f64 / total as f64) * 100.0
+                } else {
+                    0.0
+                };
 
                 report.add_metric(Metric {
                     name: format!("{} - Memory Used", gpu_label),
