@@ -161,6 +161,9 @@ fn run_all_and_output(cli: &Cli, format: &rustwhy::cli::OutputFormat) -> anyhow:
     if use_json {
         let mut reports = Vec::new();
         for module in &modules {
+            if !module.is_available() {
+                continue;
+            }
             match rt.block_on(run_module(module.clone(), &config)) {
                 Ok(r) => reports.push(r),
                 Err(e) => {
@@ -172,6 +175,9 @@ fn run_all_and_output(cli: &Cli, format: &rustwhy::cli::OutputFormat) -> anyhow:
         writeln!(stdout, "{json}")?;
     } else {
         for module in &modules {
+            if !module.is_available() {
+                continue;
+            }
             match rt.block_on(run_module(module.clone(), &config)) {
                 Ok(report) => write_report_terminal(&mut stdout, &report, !cli.no_color),
                 Err(e) => {
