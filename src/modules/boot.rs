@@ -77,13 +77,20 @@ impl DiagnosticModule for BootModule {
         // systemd-analyze blame – slow services (>1s)
         let top_n = config.top_n;
         if let Ok(out) = run_cmd(&["systemd-analyze", "blame", "--no-pager"]) {
-            let re = Regex::new(r"^\s*(\d+\.?\d*)\s*(.+)\.service").ok();
+            let re = Regex::new(r"^\s*(\d+\.?\d*)(ms|s|min)\s+(.+)\.service").ok();
             let mut entries: Vec<(f64, String)> = Vec::new();
             for line in out.lines() {
                 if let Some(ref re) = re {
                     if let Some(cap) = re.captures(line) {
-                        let ms: f64 = cap.get(1).and_then(|m| m.as_str().parse().ok()).unwrap_or(0.0);
-                        let name = cap.get(2).map(|m| m.as_str().to_string()).unwrap_or_default();
+                        let value: f64 = cap.get(1).and_then(|m| m.as_str().parse().ok()).unwrap_or(0.0);
+                        let unit = cap.get(2).map(|m| m.as_str()).unwrap_or("ms");
+                        let ms = match unit {
+                            "ms" => value,
+                            "s" => value * 1000.0,
+                            "min" => value * 60_000.0,
+                            _ => value,
+                        };
+                        let name = cap.get(3).map(|m| m.as_str().to_string()).unwrap_or_default();
                         if ms >= 1000.0 {
                             entries.push((ms / 1000.0, name));
                         }
