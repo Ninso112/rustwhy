@@ -9,6 +9,8 @@ use async_trait::async_trait;
 use regex::Regex;
 use std::sync::Arc;
 
+/// Returns the analyze boot performance and slow services via systemd diagnostic module.
+#[must_use] 
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(BootModule)
 }
@@ -46,7 +48,7 @@ impl DiagnosticModule for BootModule {
         if let Ok(out) = run_cmd(&["systemd-analyze", "time"]) {
             let total = out
                 .lines()
-                .find(|l| l.contains("= ") && l.contains("s"))
+                .find(|l| l.contains("= ") && l.contains('s'))
                 .and_then(|l| {
                     let re = Regex::new(r"(\d+\.?\d*)\s*s").ok()?;
                     re.captures(l).and_then(|c| c.get(1))?.as_str().parse::<f64>().ok()
@@ -65,7 +67,7 @@ impl DiagnosticModule for BootModule {
                     report.add_finding(Finding {
                         severity: Severity::Warning,
                         category: "boot".into(),
-                        message: format!("Boot took {:.1}s; consider disabling unnecessary services.", secs),
+                        message: format!("Boot took {secs:.1}s; consider disabling unnecessary services."),
                         details: Some("Run 'systemd-analyze blame' to see slow units.".into()),
                     });
                 }
@@ -93,8 +95,8 @@ impl DiagnosticModule for BootModule {
                 report.add_finding(Finding {
                     severity: if secs > 5.0 { Severity::Warning } else { Severity::Info },
                     category: "service".into(),
-                    message: format!("{} took {:.2}s to start", name, secs),
-                    details: Some(format!("Consider masking or disabling if not needed: systemctl disable {}.service", name)),
+                    message: format!("{name} took {secs:.2}s to start"),
+                    details: Some(format!("Consider masking or disabling if not needed: systemctl disable {name}.service")),
                 });
             }
         }

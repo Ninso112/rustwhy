@@ -1,4 +1,4 @@
-//! Battery drain explanation (battwhy) - power_supply, drain rate, wakeups.
+//! Battery drain explanation (battwhy) - `power_supply`, drain rate, wakeups.
 
 use crate::core::report::{DiagnosticReport, Finding, Metric, MetricValue, Recommendation};
 use crate::core::severity::Severity;
@@ -9,6 +9,8 @@ use async_trait::async_trait;
 use std::path::Path;
 use std::sync::Arc;
 
+/// Returns the explain battery drain and power-hungry processes diagnostic module.
+#[must_use] 
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(BattModule)
 }
@@ -51,7 +53,7 @@ impl DiagnosticModule for BattModule {
                 let name = entry.file_name().map(|o| o.to_string_lossy().into_owned()).unwrap_or_default();
                 if let Some(status) = read_power_supply_attr(&entry, "status") {
                     report.add_metric(Metric {
-                        name: format!("{} status", name),
+                        name: format!("{name} status"),
                         value: MetricValue::Text(status.clone()),
                         unit: None,
                         threshold: None,
@@ -60,7 +62,7 @@ impl DiagnosticModule for BattModule {
                 if let Some(cap) = read_power_supply_attr(&entry, "capacity") {
                     if let Ok(pct) = cap.trim().parse::<i64>() {
                         report.add_metric(Metric {
-                            name: format!("{} capacity", name),
+                            name: format!("{name} capacity"),
                             value: MetricValue::Integer(pct),
                             unit: Some("%".into()),
                             threshold: Some(crate::core::report::Threshold {
@@ -72,18 +74,18 @@ impl DiagnosticModule for BattModule {
                             report.add_finding(Finding {
                                 severity: Severity::Warning,
                                 category: "batt".into(),
-                                message: format!("Battery at {}% – very low", pct),
+                                message: format!("Battery at {pct}% – very low"),
                                 details: Some("Plug in or suspend soon.".into()),
                             });
                         }
                     }
                 }
-                if config.extra_args.get("detailed").map(|s| s == "true").unwrap_or(false) {
+                if config.extra_args.get("detailed").is_some_and(|s| s == "true") {
                     if let Some(energy) = read_power_supply_attr(&entry, "energy_now") {
                         if let Ok(u) = energy.trim().parse::<u64>() {
                             report.add_metric(Metric {
-                                name: format!("{} energy_now", name),
-                                value: MetricValue::Integer(u as i64),
+                                name: format!("{name} energy_now"),
+                                value: MetricValue::Integer(i64::try_from(u).unwrap_or(i64::MAX)),
                                 unit: Some("µWh".into()),
                                 threshold: None,
                             });
@@ -92,8 +94,8 @@ impl DiagnosticModule for BattModule {
                     if let Some(power) = read_power_supply_attr(&entry, "power_now") {
                         if let Ok(u) = power.trim().parse::<u64>() {
                             report.add_metric(Metric {
-                                name: format!("{} power_now", name),
-                                value: MetricValue::Integer(u as i64),
+                                name: format!("{name} power_now"),
+                                value: MetricValue::Integer(i64::try_from(u).unwrap_or(i64::MAX)),
                                 unit: Some("µW".into()),
                                 threshold: None,
                             });

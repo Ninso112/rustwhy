@@ -9,6 +9,8 @@ use async_trait::async_trait;
 use std::path::Path;
 use std::sync::Arc;
 
+/// Returns the explain high disk I/O and identify top readers/writers diagnostic module.
+#[must_use] 
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(IoModule)
 }
@@ -32,7 +34,7 @@ fn read_diskstats() -> Result<Vec<(String, u64, u64)>> {
 }
 
 fn read_process_io(pid: u32) -> Option<(u64, u64)> {
-    let path = format!("/proc/{}/io", pid);
+    let path = format!("/proc/{pid}/io");
     let content = std::fs::read_to_string(&path).ok()?;
     let mut read_bytes = 0u64;
     let mut write_bytes = 0u64;
@@ -70,16 +72,16 @@ impl DiagnosticModule for IoModule {
                         continue;
                     }
                 }
-                let total = read_bytes.saturating_add(write_bytes);
+                let total = read_bytes + write_bytes;
                 if total > 0 {
                     report.add_metric(Metric {
-                        name: format!("{} read", name),
+                        name: format!("{name} read"),
                         value: MetricValue::Text(format_bytes(read_bytes)),
                         unit: None,
                         threshold: None,
                     });
                     report.add_metric(Metric {
-                        name: format!("{} write", name),
+                        name: format!("{name} write"),
                         value: MetricValue::Text(format_bytes(write_bytes)),
                         unit: None,
                         threshold: None,
@@ -95,10 +97,10 @@ impl DiagnosticModule for IoModule {
                 let name = entry.file_name();
                 if let Ok(pid) = name.to_string_lossy().parse::<u32>() {
                     if let Some((r, w)) = read_process_io(pid) {
-                        let total = r.saturating_add(w);
+                        let total = r + w;
                         if total > 10 * 1024 * 1024 {
-                            let comm = std::fs::read_to_string(format!("/proc/{}/comm", pid))
-                                .unwrap_or_else(|_| format!("pid {}", pid));
+                            let comm = std::fs::read_to_string(format!("/proc/{pid}/comm"))
+                                .unwrap_or_else(|_| format!("pid {pid}"));
                             let comm = comm.trim_end().to_string();
                             process_io.push((pid, comm, r, w));
                         }
@@ -106,7 +108,7 @@ impl DiagnosticModule for IoModule {
                 }
             }
         }
-        process_io.sort_by(|a, b| b.2.saturating_add(b.3).cmp(&a.2.saturating_add(a.3)));
+        process_io.sort_by_key(|b: &(u32, String, u64, u64)| std::cmp::Reverse(b.2 + b.3));
         for (pid, comm, r, w) in process_io.into_iter().take(config.top_n) {
             report.add_finding(Finding {
                 severity: Severity::Info,

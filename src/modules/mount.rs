@@ -9,6 +9,8 @@ use async_trait::async_trait;
 use std::path::Path;
 use std::sync::Arc;
 
+/// Returns the diagnose mount point issues and filesystem checks diagnostic module.
+#[must_use] 
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(MountModule)
 }
@@ -28,8 +30,8 @@ impl DiagnosticModule for MountModule {
     async fn run(&self, config: &ModuleConfig) -> Result<DiagnosticReport> {
         let mut report = DiagnosticReport::new("mount", "Mount diagnostics");
         let mountpoint_filter = config.extra_args.get("mountpoint").map(String::as_str);
-        let check_nfs = config.extra_args.get("nfs").map(|s| s == "true").unwrap_or(false);
-        let show_options = config.extra_args.get("options").map(|s| s == "true").unwrap_or(false);
+        let check_nfs = config.extra_args.get("nfs").is_some_and(|s| s == "true");
+        let show_options = config.extra_args.get("options").is_some_and(|s| s == "true");
 
         let mounts_content = match std::fs::read_to_string("/proc/mounts") {
             Ok(c) => c,
@@ -65,10 +67,10 @@ impl DiagnosticModule for MountModule {
             count += 1;
 
             if options.contains("ro") && !device.starts_with("tmpfs") && !device.starts_with("cgroup") {
-                ro_mounts.push(format!("{} on {}", device, mountpoint));
+                ro_mounts.push(format!("{device} on {mountpoint}"));
             }
             if check_nfs && (fstype == "nfs" || fstype == "nfs4") {
-                nfs_mounts.push(format!("{} {}", mountpoint, options));
+                nfs_mounts.push(format!("{mountpoint} {options}"));
             }
             if show_options && (mountpoint.starts_with('/') && mountpoint.len() <= 50) {
                 report.add_metric(Metric {
@@ -82,7 +84,7 @@ impl DiagnosticModule for MountModule {
 
         report.add_metric(Metric {
             name: "Mount count".into(),
-            value: MetricValue::Integer(count as i64),
+            value: MetricValue::Integer(i64::try_from(count).unwrap_or(i64::MAX)),
             unit: None,
             threshold: None,
         });
@@ -91,7 +93,7 @@ impl DiagnosticModule for MountModule {
             report.add_finding(Finding {
                 severity: Severity::Info,
                 category: "mount".into(),
-                message: format!("Read-only: {}", m),
+                message: format!("Read-only: {m}"),
                 details: None,
             });
         }
@@ -108,7 +110,7 @@ impl DiagnosticModule for MountModule {
             let fstab_entries: usize = fstab.lines().filter(|l| !l.trim().is_empty() && !l.trim().starts_with('#')).count();
             report.add_metric(Metric {
                 name: "fstab entries".into(),
-                value: MetricValue::Integer(fstab_entries as i64),
+                value: MetricValue::Integer(i64::try_from(fstab_entries).unwrap_or(i64::MAX)),
                 unit: None,
                 threshold: None,
             });

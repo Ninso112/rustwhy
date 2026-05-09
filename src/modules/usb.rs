@@ -9,6 +9,8 @@ use async_trait::async_trait;
 use std::path::Path;
 use std::sync::Arc;
 
+/// Returns the diagnose USB device problems and enumeration diagnostic module.
+#[must_use] 
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(UsbModule)
 }
@@ -28,14 +30,14 @@ impl DiagnosticModule for UsbModule {
     async fn run(&self, config: &ModuleConfig) -> Result<DiagnosticReport> {
         let mut report = DiagnosticReport::new("usb", "USB diagnostics");
         let device_filter = config.extra_args.get("device").map(String::as_str);
-        let show_dmesg = config.extra_args.get("dmesg").map(|s| s == "true").unwrap_or(false);
+        let show_dmesg = config.extra_args.get("dmesg").is_some_and(|s| s == "true");
 
         if command_exists("lsusb") {
             if let Ok(out) = run_cmd(&["lsusb"]) {
                 let lines: Vec<&str> = out.lines().filter(|l| !l.trim().is_empty()).collect();
                 report.add_metric(Metric {
                     name: "USB devices (lsusb)".into(),
-                    value: MetricValue::Integer(lines.len() as i64),
+                    value: MetricValue::Integer(i64::try_from(lines.len()).unwrap_or(i64::MAX)),
                     unit: None,
                     threshold: None,
                 });
@@ -62,15 +64,14 @@ impl DiagnosticModule for UsbModule {
                     .iter()
                     .filter(|e| {
                         e.file_name()
-                            .map(|o| {
-                                o.to_string_lossy().chars().next().map(|c: char| c.is_ascii_digit()).unwrap_or(false)
+                            .is_some_and(|o| {
+                                o.to_string_lossy().chars().next().is_some_and(|c: char| c.is_ascii_digit())
                             })
-                            .unwrap_or(false)
                     })
                     .count();
                 report.add_metric(Metric {
                     name: "USB devices (sysfs)".into(),
-                    value: MetricValue::Integer(count as i64),
+                    value: MetricValue::Integer(i64::try_from(count).unwrap_or(i64::MAX)),
                     unit: None,
                     threshold: None,
                 });

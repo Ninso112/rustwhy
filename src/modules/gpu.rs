@@ -3,7 +3,7 @@
 //! This module provides comprehensive GPU diagnostics across all major vendors:
 //! - NVIDIA: via nvidia-smi and optional NVML library
 //! - AMD: via rocm-smi, radeontop, and sysfs
-//! - Intel: via intel_gpu_top and sysfs
+//! - Intel: via `intel_gpu_top` and sysfs
 //! - Generic: via /sys/class/drm for basic detection
 
 use crate::core::report::{
@@ -17,6 +17,8 @@ use async_trait::async_trait;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+/// Returns the analyze GPU utilization and memory across all vendors (NVIDIA/AMD/Intel) diagnostic module.
+#[must_use] 
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(GpuModule)
 }
@@ -132,7 +134,7 @@ fn discover_gpus() -> Vec<GpuDevice> {
 }
 
 /// Get GPU stats using NVIDIA tools
-fn get_nvidia_stats(device: &GpuDevice) -> Result<GpuStats> {
+fn get_nvidia_stats(device: &GpuDevice) -> GpuStats {
     let mut stats = GpuStats::default();
 
     // Try nvidia-smi first (most reliable)
@@ -141,8 +143,8 @@ fn get_nvidia_stats(device: &GpuDevice) -> Result<GpuStats> {
         let gpu_index = device.card_name.trim_start_matches("card");
 
         let query = "name,utilization.gpu,memory.used,memory.total,temperature.gpu,power.draw,fan.speed,clocks.gr";
-        let id_arg = format!("--id={}", gpu_index);
-        let query_arg = format!("--query-gpu={}", query);
+        let id_arg = format!("--id={gpu_index}");
+        let query_arg = format!("--query-gpu={query}");
         let args = vec![
             "nvidia-smi",
             &id_arg,
@@ -151,7 +153,7 @@ fn get_nvidia_stats(device: &GpuDevice) -> Result<GpuStats> {
         ];
 
         if let Ok(output) = run_cmd(&args) {
-            let parts: Vec<&str> = output.trim().split(',').map(|s| s.trim()).collect();
+            let parts: Vec<&str> = output.trim().split(',').map(str::trim).collect();
 
             if !parts.is_empty() && parts[0] != "[N/A]" {
                 stats.name = Some(parts[0].to_string());
@@ -185,11 +187,12 @@ fn get_nvidia_stats(device: &GpuDevice) -> Result<GpuStats> {
         stats.name = read_sysfs_gpu_name(&device.device_path);
     }
 
-    Ok(stats)
+    stats
 }
 
 /// Get GPU stats using AMD tools
-fn get_amd_stats(device: &GpuDevice) -> Result<GpuStats> {
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+fn get_amd_stats(device: &GpuDevice) -> GpuStats {
     let mut stats = GpuStats::default();
 
     // Try rocm-smi (for modern AMD GPUs with ROCm)
@@ -284,11 +287,11 @@ fn get_amd_stats(device: &GpuDevice) -> Result<GpuStats> {
 
     stats.name = read_sysfs_gpu_name(&device.device_path);
 
-    Ok(stats)
+    stats
 }
 
 /// Get GPU stats using Intel tools
-fn get_intel_stats(device: &GpuDevice) -> Result<GpuStats> {
+fn get_intel_stats(device: &GpuDevice) -> GpuStats {
     let mut stats = GpuStats::default();
 
     // Try intel_gpu_top (requires intel-gpu-tools package)
@@ -299,13 +302,13 @@ fn get_intel_stats(device: &GpuDevice) -> Result<GpuStats> {
             if let Ok(json) = serde_json::from_str::<serde_json::Value>(&output) {
                 if let Some(engines) = json.get("engines") {
                     if let Some(render) = engines.get("Render/3D") {
-                        if let Some(busy) = render.get("busy").and_then(|v| v.as_f64()) {
+                        if let Some(busy) = render.get("busy").and_then(serde_json::Value::as_f64) {
                             stats.utilization = Some(busy);
                         }
                     }
                 }
                 if let Some(freq) = json.get("frequency") {
-                    if let Some(actual) = freq.get("actual").and_then(|v| v.as_u64()) {
+                    if let Some(actual) = freq.get("actual").and_then(serde_json::Value::as_u64) {
                         stats.clock_speed = Some(actual);
                     }
                 }
@@ -333,7 +336,7 @@ fn get_intel_stats(device: &GpuDevice) -> Result<GpuStats> {
 
     stats.name = read_sysfs_gpu_name(&device.device_path);
 
-    Ok(stats)
+    stats
 }
 
 /// Find hwmon directory for a device
@@ -369,7 +372,7 @@ fn read_sysfs_gpu_name(device_path: &Path) -> Option<String> {
 
     // 2. Device description from modalias or device
     if let Ok(Some(device_id)) = read_first_line(&device_path.join("device")) {
-        return Some(format!("GPU Device {}", device_id));
+        return Some(format!("GPU Device {device_id}"));
     }
 
     // 3. Use lspci if available
@@ -425,6 +428,7 @@ impl DiagnosticModule for GpuModule {
         "Analyze GPU utilization and memory across all vendors (NVIDIA/AMD/Intel)"
     }
 
+    #[allow(clippy::too_many_lines)]
     async fn run(&self, config: &ModuleConfig) -> Result<DiagnosticReport> {
         let mut report = DiagnosticReport::new("gpu", "GPU diagnostics");
 
@@ -446,7 +450,7 @@ impl DiagnosticModule for GpuModule {
 
         report.add_metric(Metric {
             name: "GPU Devices Detected".into(),
-            value: MetricValue::Integer(devices.len() as i64),
+            value: MetricValue::Integer(i64::try_from(devices.len()).unwrap_or(i64::MAX)),
             unit: None,
             threshold: None,
         });
@@ -468,29 +472,12 @@ impl DiagnosticModule for GpuModule {
                 }
             };
 
-            let stats = match stats {
-                Ok(s) => s,
-                Err(e) => {
-                    report.add_finding(Finding {
-                        severity: Severity::Warning,
-                        category: "stats".into(),
-                        message: format!(
-                            "Failed to get stats for {} GPU {}",
-                            device.vendor.name(),
-                            idx
-                        ),
-                        details: Some(format!("Error: {}", e)),
-                    });
-                    continue;
-                }
-            };
-
             let gpu_label = format!("{} GPU {}", device.vendor.name(), idx);
 
             // GPU Name
             if let Some(name) = &stats.name {
                 report.add_metric(Metric {
-                    name: format!("{} - Name", gpu_label),
+                    name: format!("{gpu_label} - Name"),
                     value: MetricValue::Text(name.clone()),
                     unit: None,
                     threshold: None,
@@ -500,7 +487,7 @@ impl DiagnosticModule for GpuModule {
             // Utilization
             if let Some(util) = stats.utilization {
                 report.add_metric(Metric {
-                    name: format!("{} - Utilization", gpu_label),
+                    name: format!("{gpu_label} - Utilization"),
                     value: MetricValue::Float(util),
                     unit: Some("%".into()),
                     threshold: Some(Threshold {
@@ -513,14 +500,14 @@ impl DiagnosticModule for GpuModule {
                     report.add_finding(Finding {
                         severity: Severity::Warning,
                         category: "utilization".into(),
-                        message: format!("{} is under high load ({:.1}%)", gpu_label, util),
+                        message: format!("{gpu_label} is under high load ({util:.1}%)"),
                         details: Some("GPU is near maximum utilization. This may cause performance bottlenecks.".into()),
                     });
                 } else if util < 5.0 && config.verbose {
                     report.add_finding(Finding {
                         severity: Severity::Info,
                         category: "utilization".into(),
-                        message: format!("{} is idle ({:.1}%)", gpu_label, util),
+                        message: format!("{gpu_label} is idle ({util:.1}%)"),
                         details: None,
                     });
                 }
@@ -528,6 +515,7 @@ impl DiagnosticModule for GpuModule {
 
             // Memory
             if let (Some(used), Some(total)) = (stats.memory_used, stats.memory_total) {
+                #[allow(clippy::cast_precision_loss)]
                 let percent = if total > 0 {
                     (used as f64 / total as f64) * 100.0
                 } else {
@@ -535,10 +523,9 @@ impl DiagnosticModule for GpuModule {
                 };
 
                 report.add_metric(Metric {
-                    name: format!("{} - Memory Used", gpu_label),
+                    name: format!("{gpu_label} - Memory Used"),
                     value: MetricValue::Text(format!(
-                        "{} MiB / {} MiB ({:.1}%)",
-                        used, total, percent
+                        "{used} MiB / {total} MiB ({percent:.1}%)"
                     )),
                     unit: None,
                     threshold: None,
@@ -548,8 +535,8 @@ impl DiagnosticModule for GpuModule {
                     report.add_finding(Finding {
                         severity: Severity::Warning,
                         category: "memory".into(),
-                        message: format!("{} memory is nearly full ({:.1}%)", gpu_label, percent),
-                        details: Some(format!("{} MiB of {} MiB used", used, total)),
+                        message: format!("{gpu_label} memory is nearly full ({percent:.1}%)"),
+                        details: Some(format!("{used} MiB of {total} MiB used")),
                     });
                 }
             }
@@ -557,7 +544,7 @@ impl DiagnosticModule for GpuModule {
             // Temperature
             if let Some(temp) = stats.temperature {
                 report.add_metric(Metric {
-                    name: format!("{} - Temperature", gpu_label),
+                    name: format!("{gpu_label} - Temperature"),
                     value: MetricValue::Integer(temp),
                     unit: Some("°C".into()),
                     threshold: Some(Threshold {
@@ -570,7 +557,7 @@ impl DiagnosticModule for GpuModule {
                     report.add_finding(Finding {
                         severity: Severity::Critical,
                         category: "temperature".into(),
-                        message: format!("{} is running very hot ({}°C)", gpu_label, temp),
+                        message: format!("{gpu_label} is running very hot ({temp}°C)"),
                         details: Some(
                             "GPU may throttle performance or shut down. Check cooling and airflow."
                                 .into(),
@@ -580,7 +567,7 @@ impl DiagnosticModule for GpuModule {
                     report.add_finding(Finding {
                         severity: Severity::Warning,
                         category: "temperature".into(),
-                        message: format!("{} temperature is elevated ({}°C)", gpu_label, temp),
+                        message: format!("{gpu_label} temperature is elevated ({temp}°C)"),
                         details: Some(
                             "Consider improving case airflow or cleaning dust filters.".into(),
                         ),
@@ -591,7 +578,7 @@ impl DiagnosticModule for GpuModule {
             // Power Usage
             if let Some(power) = stats.power_usage {
                 report.add_metric(Metric {
-                    name: format!("{} - Power Draw", gpu_label),
+                    name: format!("{gpu_label} - Power Draw"),
                     value: MetricValue::Float(power),
                     unit: Some("W".into()),
                     threshold: None,
@@ -601,7 +588,7 @@ impl DiagnosticModule for GpuModule {
             // Fan Speed
             if let Some(fan) = stats.fan_speed {
                 report.add_metric(Metric {
-                    name: format!("{} - Fan Speed", gpu_label),
+                    name: format!("{gpu_label} - Fan Speed"),
                     value: MetricValue::Integer(fan),
                     unit: Some("RPM".into()),
                     threshold: None,
@@ -611,8 +598,8 @@ impl DiagnosticModule for GpuModule {
             // Clock Speed
             if let Some(clock) = stats.clock_speed {
                 report.add_metric(Metric {
-                    name: format!("{} - Clock Speed", gpu_label),
-                    value: MetricValue::Integer(clock as i64),
+                    name: format!("{gpu_label} - Clock Speed"),
+                    value: MetricValue::Integer(i64::try_from(clock).unwrap_or(i64::MAX)),
                     unit: Some("MHz".into()),
                     threshold: None,
                 });
@@ -686,7 +673,7 @@ impl DiagnosticModule for GpuModule {
                         GpuVendor::Intel => {
                             Some("# Install: apt-get install intel-gpu-tools".into())
                         }
-                        _ => None,
+                        GpuVendor::Unknown(_) => None,
                     },
                     explanation: "Vendor tools provide the most detailed GPU metrics.".into(),
                 });

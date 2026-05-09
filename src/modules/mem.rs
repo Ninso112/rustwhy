@@ -10,6 +10,8 @@ use std::path::Path;
 use std::sync::Arc;
 use sysinfo::System;
 
+/// Returns the explain memory consumption and identify top consumers diagnostic module.
+#[must_use] 
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(MemModule)
 }
@@ -26,6 +28,26 @@ fn read_meminfo() -> Result<std::collections::HashMap<String, u64>> {
         }
     }
     Ok(map)
+}
+
+fn add_top_memory_processes(report: &mut DiagnosticReport, top_n: usize) {
+    let mut sys = System::new_all();
+    sys.refresh_all();
+    let mut processes: Vec<_> = sys.processes().iter().collect();
+    processes.sort_by_key(|b| std::cmp::Reverse(b.1.memory()));
+    for (pid, proc_ref) in processes.into_iter().take(top_n) {
+        let rss = proc_ref.memory();
+        if rss < 50 * 1024 * 1024 {
+            continue;
+        }
+        let name = proc_ref.name().to_string_lossy().into_owned();
+        report.add_finding(Finding {
+            severity: Severity::Info,
+            category: "process".into(),
+            message: format!("{} (PID {}) uses {}", name, pid.as_u32(), format_bytes(rss)),
+            details: Some("RSS (resident set size)".into()),
+        });
+    }
 }
 
 #[async_trait]
@@ -66,6 +88,7 @@ impl DiagnosticModule for MemModule {
         let mem_used_kb = mem_total_kb.saturating_sub(mem_avail_kb);
         let mem_used_bytes = mem_used_kb * 1024;
         let mem_total_bytes = mem_total_kb * 1024;
+        #[allow(clippy::cast_precision_loss)]
         let usage_pct = if mem_total_kb > 0 {
             (mem_used_kb as f64 / mem_total_kb as f64) * 100.0
         } else {
@@ -93,9 +116,10 @@ impl DiagnosticModule for MemModule {
                 critical: 95.0,
             }),
         });
-        if config.extra_args.get("swap").map(|s| s == "true").unwrap_or(false) {
+        if config.extra_args.get("swap").is_none_or(|s| s == "true") {
             let swap_used_kb = swap_total_kb.saturating_sub(swap_free_kb);
             if swap_total_kb > 0 {
+                #[allow(clippy::cast_precision_loss)]
                 let swap_pct = (swap_used_kb as f64 / swap_total_kb as f64) * 100.0;
                 report.add_metric(Metric {
                     name: "Swap used".into(),
@@ -107,7 +131,7 @@ impl DiagnosticModule for MemModule {
                     report.add_finding(Finding {
                         severity: Severity::Warning,
                         category: "swap".into(),
-                        message: format!("High swap usage ({:.0}%); system may be under memory pressure.", swap_pct),
+                        message: format!("High swap usage ({swap_pct:.0}%); system may be under memory pressure."),
                         details: Some("Consider adding RAM or reducing memory-hungry processes.".into()),
                     });
                 }
@@ -123,25 +147,7 @@ impl DiagnosticModule for MemModule {
             });
         }
 
-        // Top processes by memory (RSS)
-        let mut sys = System::new_all();
-        sys.refresh_all();
-        let mut processes: Vec<_> = sys.processes().iter().collect();
-        processes.sort_by(|a, b| b.1.memory().cmp(&a.1.memory()));
-        let top_n = config.top_n;
-        for (pid, proc_ref) in processes.into_iter().take(top_n) {
-            let rss = proc_ref.memory();
-            if rss < 50 * 1024 * 1024 {
-                continue;
-            }
-            let name = proc_ref.name().to_string_lossy().into_owned();
-            report.add_finding(Finding {
-                severity: Severity::Info,
-                category: "process".into(),
-                message: format!("{} (PID {}) uses {}", name, pid.as_u32(), format_bytes(rss)),
-                details: Some("RSS (resident set size)".into()),
-            });
-        }
+        add_top_memory_processes(&mut report, config.top_n);
 
         if usage_pct > 85.0 {
             report.add_recommendation(Recommendation {

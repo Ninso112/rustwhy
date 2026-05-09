@@ -3,20 +3,23 @@
 use std::str::FromStr;
 
 /// Parse a string into a number, returning None on failure.
+#[must_use] 
 pub fn parse_u64(s: &str) -> Option<u64> {
     s.trim().parse().ok()
 }
 
 /// Parse a string into f64, returning None on failure.
+#[must_use] 
 pub fn parse_f64(s: &str) -> Option<f64> {
     s.trim().parse().ok()
 }
 
 /// Parse size from human-readable string (e.g. "100M", "1G"). Returns bytes.
+#[must_use] 
 pub fn parse_size_human(s: &str) -> Option<u64> {
     let s = s.trim();
     let (num, suffix) = if s.ends_with(|c: char| c.is_ascii_alphabetic()) {
-        let i = s.rfind(|c: char| c.is_ascii_digit()).map(|i| i + 1).unwrap_or(0);
+        let i = s.rfind(|c: char| c.is_ascii_digit()).map_or(0, |i| i + 1);
         (&s[..i], &s[i..])
     } else {
         (s, "")
@@ -35,10 +38,11 @@ pub fn parse_size_human(s: &str) -> Option<u64> {
         "TI" | "TIB" => 1024u64 * 1024 * 1024 * 1024,
         _ => return None,
     };
-    Some(n.checked_mul(factor)?)
+    n.checked_mul(factor)
 }
 
 /// Parse key: value line (e.g. from /proc/meminfo).
+#[must_use] 
 pub fn parse_key_value(line: &str) -> Option<(&str, &str)> {
     let line = line.trim();
     let colon = line.find(':')?;
@@ -47,6 +51,7 @@ pub fn parse_key_value(line: &str) -> Option<(&str, &str)> {
 }
 
 /// Parse key: value and convert value to T.
+#[must_use] 
 pub fn parse_key_value_as<T: FromStr>(line: &str) -> Option<(&str, T)> {
     let (k, v) = parse_key_value(line)?;
     Some((k, v.parse().ok()?))

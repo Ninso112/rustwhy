@@ -9,6 +9,8 @@ use async_trait::async_trait;
 use std::path::Path;
 use std::sync::Arc;
 
+/// Returns the analyze temperatures and thermal throttling diagnostic module.
+#[must_use] 
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(TempModule)
 }
@@ -76,7 +78,7 @@ impl DiagnosticModule for TempModule {
 
     async fn run(&self, config: &ModuleConfig) -> Result<DiagnosticReport> {
         let mut report = DiagnosticReport::new("temp", "Temperature analysis");
-        let only_critical = config.extra_args.get("critical").map(|s| s == "true").unwrap_or(false);
+        let only_critical = config.extra_args.get("critical").is_some_and(|s| s == "true");
 
         let mut all_temps: Vec<(String, i32)> = Vec::new();
         all_temps.extend(read_thermal_zones());
@@ -101,25 +103,25 @@ impl DiagnosticModule for TempModule {
             }
             report.add_metric(Metric {
                 name: name.clone(),
-                value: MetricValue::Integer(*temp_c as i64),
+                value: MetricValue::Integer(i64::from(*temp_c)),
                 unit: Some("°C".into()),
                 threshold: Some(crate::core::report::Threshold {
-                    warning: warning_thresh as f64,
-                    critical: critical_thresh as f64,
+                    warning: f64::from(warning_thresh),
+                    critical: f64::from(critical_thresh),
                 }),
             });
             if *temp_c >= critical_thresh {
                 report.add_finding(Finding {
                     severity: Severity::Critical,
                     category: "temp".into(),
-                    message: format!("{} at {}°C – thermal throttling risk", name, temp_c),
+                    message: format!("{name} at {temp_c}°C – thermal throttling risk"),
                     details: Some("Improve cooling or reduce load.".into()),
                 });
             } else if *temp_c >= warning_thresh {
                 report.add_finding(Finding {
                     severity: Severity::Warning,
                     category: "temp".into(),
-                    message: format!("{} at {}°C – high temperature", name, temp_c),
+                    message: format!("{name} at {temp_c}°C – high temperature"),
                     details: None,
                 });
             }
