@@ -27,7 +27,7 @@ fn main() -> anyhow::Result<()> {
             }
             return Ok(());
         }
-        Commands::All { quick: _, format } => {
+        Commands::All { format } => {
             return run_all_and_output(&cli, format);
         }
         _ => {}

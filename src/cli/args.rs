@@ -306,10 +306,6 @@ pub enum Commands {
 
     /// Run all diagnostic modules
     All {
-        /// Skip slow checks
-        #[arg(long)]
-        quick: bool,
-
         /// Output format
         #[arg(long, value_enum, default_value = "terminal")]
         format: OutputFormat,
