@@ -26,7 +26,7 @@ fn read_diskstats() -> Result<Vec<(String, u64, u64)>> {
         let name = parts[2].to_string();
         let read_sectors: u64 = parts[5].parse().unwrap_or(0);
         let write_sectors: u64 = parts[9].parse().unwrap_or(0);
-        out.push((name, read_sectors * 512, write_sectors * 512));
+        out.push((name, read_sectors.saturating_mul(512), write_sectors.saturating_mul(512)));
     }
     Ok(out)
 }
