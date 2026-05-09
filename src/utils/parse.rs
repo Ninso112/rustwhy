@@ -35,7 +35,7 @@ pub fn parse_size_human(s: &str) -> Option<u64> {
         "TI" | "TIB" => 1024u64 * 1024 * 1024 * 1024,
         _ => return None,
     };
-    Some(n * factor)
+    Some(n.checked_mul(factor)?)
 }
 
 /// Parse key: value line (e.g. from /proc/meminfo).
