@@ -47,12 +47,13 @@ pub fn parse_key_value(line: &str) -> Option<(&str, &str)> {
     let line = line.trim();
     let colon = line.find(':')?;
     let (k, v) = line.split_at(colon);
-    Some((k.trim(), v[1..].split_whitespace().next()?))
+    Some((k.trim(), v[1..].trim()))
 }
 
 /// Parse key: value and convert value to T.
 #[must_use] 
 pub fn parse_key_value_as<T: FromStr>(line: &str) -> Option<(&str, T)> {
     let (k, v) = parse_key_value(line)?;
-    Some((k, v.parse().ok()?))
+    let first_token = v.split_whitespace().next()?;
+    Some((k, first_token.parse().ok()?))
 }
