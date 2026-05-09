@@ -70,7 +70,7 @@ impl DiagnosticModule for IoModule {
                         continue;
                     }
                 }
-                let total = read_bytes + write_bytes;
+                let total = read_bytes.saturating_add(write_bytes);
                 if total > 0 {
                     report.add_metric(Metric {
                         name: format!("{} read", name),
@@ -95,7 +95,7 @@ impl DiagnosticModule for IoModule {
                 let name = entry.file_name();
                 if let Ok(pid) = name.to_string_lossy().parse::<u32>() {
                     if let Some((r, w)) = read_process_io(pid) {
-                        let total = r + w;
+                        let total = r.saturating_add(w);
                         if total > 10 * 1024 * 1024 {
                             let comm = std::fs::read_to_string(format!("/proc/{}/comm", pid))
                                 .unwrap_or_else(|_| format!("pid {}", pid));
@@ -106,7 +106,7 @@ impl DiagnosticModule for IoModule {
                 }
             }
         }
-        process_io.sort_by(|a, b| (b.2 + b.3).cmp(&(a.2 + a.3)));
+        process_io.sort_by(|a, b| b.2.saturating_add(b.3).cmp(&a.2.saturating_add(a.3)));
         for (pid, comm, r, w) in process_io.into_iter().take(config.top_n) {
             report.add_finding(Finding {
                 severity: Severity::Info,
