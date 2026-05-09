@@ -27,8 +27,8 @@ fn main() -> anyhow::Result<()> {
             }
             return Ok(());
         }
-        Commands::All { quick: _, format: _ } => {
-            return run_all_and_output(&cli);
+        Commands::All { quick: _, format } => {
+            return run_all_and_output(&cli, format);
         }
         _ => {}
     }
@@ -65,7 +65,12 @@ fn command_to_module_config(cli: &Cli) -> anyhow::Result<(String, ModuleConfig)>
             "cpu".into(),
             ModuleConfig { watch: *watch, top_n: *top, interval: *interval, ..config },
         ),
-        Commands::Mem { top, .. } => ("mem".into(), ModuleConfig { top_n: *top, ..config }),
+        Commands::Mem { top, swap, .. } => {
+            if *swap {
+                extra.insert("swap".into(), "true".into());
+            }
+            ("mem".into(), ModuleConfig { top_n: *top, extra_args: extra, ..config })
+        }
         Commands::Disk { path, depth, old, large, hidden, .. } => {
             extra.insert("path".into(), path.clone().unwrap_or_else(|| "/".into()));
             extra.insert("depth".into(), depth.to_string());
@@ -138,7 +143,7 @@ fn command_to_module_config(cli: &Cli) -> anyhow::Result<(String, ModuleConfig)>
     Ok((name, config))
 }
 
-fn run_all_and_output(cli: &Cli) -> anyhow::Result<()> {
+fn run_all_and_output(cli: &Cli, format: &rustwhy::cli::OutputFormat) -> anyhow::Result<()> {
     let config = ModuleConfig {
         verbose: cli.verbose,
         watch: false,
@@ -151,7 +156,9 @@ fn run_all_and_output(cli: &Cli) -> anyhow::Result<()> {
     let rt = tokio::runtime::Runtime::new()?;
     let mut stdout = io::stdout().lock();
 
-    if cli.json {
+    let use_json = cli.json || matches!(format, rustwhy::cli::OutputFormat::Json);
+
+    if use_json {
         let mut reports = Vec::new();
         for module in &modules {
             match rt.block_on(run_module(module.clone(), &config)) {
