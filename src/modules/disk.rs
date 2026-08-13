@@ -12,7 +12,7 @@ use std::sync::Arc;
 use walkdir::WalkDir;
 
 /// Returns the analyze disk space usage and find large or old files diagnostic module.
-#[must_use] 
+#[must_use]
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(DiskModule)
 }
@@ -37,8 +37,12 @@ impl DiagnosticModule for DiskModule {
             .get("depth")
             .and_then(|s| s.parse().ok())
             .unwrap_or(3);
-        let _older_than_days: Option<u64> = config.extra_args.get("old").and_then(|s| s.parse().ok());
-        let larger_than_bytes: Option<u64> = config.extra_args.get("large").and_then(|s| parse_size_human(s));
+        let _older_than_days: Option<u64> =
+            config.extra_args.get("old").and_then(|s| s.parse().ok());
+        let larger_than_bytes: Option<u64> = config
+            .extra_args
+            .get("large")
+            .and_then(|s| parse_size_human(s));
         let include_hidden = config.extra_args.get("hidden").is_some_and(|s| s == "true");
 
         let mut report = DiagnosticReport::new("disk", "Disk space analysis");
@@ -77,7 +81,10 @@ impl DiagnosticModule for DiskModule {
                 if depth >= 1 {
                     if let Some(parent) = entry.path().parent() {
                         let key = parent.display().to_string();
-                        dir_sizes.entry(key).and_modify(|e| *e = e.saturating_add(size)).or_insert(size);
+                        dir_sizes
+                            .entry(key)
+                            .and_modify(|e| *e = e.saturating_add(size))
+                            .or_insert(size);
                     }
                 }
             }
@@ -122,7 +129,8 @@ impl DiagnosticModule for DiskModule {
         if total_size > 50 * 1024 * 1024 * 1024 {
             report.add_recommendation(Recommendation {
                 priority: 2,
-                action: "Review large directories (e.g. /var/log, caches) and clean old data.".into(),
+                action: "Review large directories (e.g. /var/log, caches) and clean old data."
+                    .into(),
                 command: Some("du -sh /var/log/* 2>/dev/null | sort -hr | head -10".into()),
                 explanation: "Logs and caches often consume significant space.".into(),
             });

@@ -18,7 +18,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 /// Returns the analyze GPU utilization and memory across all vendors (NVIDIA/AMD/Intel) diagnostic module.
-#[must_use] 
+#[must_use]
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(GpuModule)
 }
@@ -524,9 +524,7 @@ impl DiagnosticModule for GpuModule {
 
                 report.add_metric(Metric {
                     name: format!("{gpu_label} - Memory Used"),
-                    value: MetricValue::Text(format!(
-                        "{used} MiB / {total} MiB ({percent:.1}%)"
-                    )),
+                    value: MetricValue::Text(format!("{used} MiB / {total} MiB ({percent:.1}%)")),
                     unit: None,
                     threshold: None,
                 });

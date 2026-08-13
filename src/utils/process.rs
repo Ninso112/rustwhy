@@ -22,7 +22,11 @@ pub fn process_name(pid: u32) -> Result<String> {
                     .to_string()
             })
         })?;
-    Ok(if name.is_empty() { format!("[pid {pid}]") } else { name })
+    Ok(if name.is_empty() {
+        format!("[pid {pid}]")
+    } else {
+        name
+    })
 }
 
 /// Get process user (UID) and optionally resolve to username.

@@ -4,26 +4,25 @@ use crate::core::traits::Permission;
 use std::path::Path;
 
 /// Check if the current process has root (effective UID 0).
-#[must_use] 
+#[must_use]
 pub fn is_root() -> bool {
     users::get_effective_uid() == 0
 }
 
 /// Check if we can read from /proc (e.g. /proc/self/status).
-#[must_use] 
+#[must_use]
 pub fn can_read_proc() -> bool {
-    Path::new("/proc/self/status").exists()
-        && std::fs::read_to_string("/proc/self/status").is_ok()
+    Path::new("/proc/self/status").exists() && std::fs::read_to_string("/proc/self/status").is_ok()
 }
 
 /// Check if we can read from /sys (e.g. /sys/class).
-#[must_use] 
+#[must_use]
 pub fn can_read_sys() -> bool {
     Path::new("/sys/class").exists() && std::fs::read_dir("/sys/class").is_ok()
 }
 
 /// Check if the given permission is satisfied on this system.
-#[must_use] 
+#[must_use]
 pub fn has_permission(perm: &Permission) -> bool {
     match perm {
         Permission::Root | Permission::NetAdmin | Permission::PerfEvent => is_root(),

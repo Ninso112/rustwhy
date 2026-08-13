@@ -10,7 +10,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 /// Returns the diagnose USB device problems and enumeration diagnostic module.
-#[must_use] 
+#[must_use]
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(UsbModule)
 }
@@ -63,10 +63,12 @@ impl DiagnosticModule for UsbModule {
                 let count = entries
                     .iter()
                     .filter(|e| {
-                        e.file_name()
-                            .is_some_and(|o| {
-                                o.to_string_lossy().chars().next().is_some_and(|c: char| c.is_ascii_digit())
-                            })
+                        e.file_name().is_some_and(|o| {
+                            o.to_string_lossy()
+                                .chars()
+                                .next()
+                                .is_some_and(|c: char| c.is_ascii_digit())
+                        })
                     })
                     .count();
                 report.add_metric(Metric {
@@ -84,7 +86,10 @@ impl DiagnosticModule for UsbModule {
                     .lines()
                     .filter(|l| {
                         let lower = l.to_lowercase();
-                        lower.contains("usb") && (lower.contains("error") || lower.contains("reset") || lower.contains("fail"))
+                        lower.contains("usb")
+                            && (lower.contains("error")
+                                || lower.contains("reset")
+                                || lower.contains("fail"))
                     })
                     .take(10)
                     .collect();
@@ -110,7 +115,8 @@ impl DiagnosticModule for UsbModule {
 
         report.add_recommendation(Recommendation {
             priority: 3,
-            action: "Use 'lsusb -t' for tree view; 'dmesg | grep -i usb' for kernel messages.".into(),
+            action: "Use 'lsusb -t' for tree view; 'dmesg | grep -i usb' for kernel messages."
+                .into(),
             command: Some("lsusb -t".into()),
             explanation: "Helps identify enumeration or power issues.".into(),
         });

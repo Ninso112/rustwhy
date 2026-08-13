@@ -10,7 +10,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 /// Returns the explain high disk I/O and identify top readers/writers diagnostic module.
-#[must_use] 
+#[must_use]
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(IoModule)
 }
@@ -28,7 +28,11 @@ fn read_diskstats() -> Result<Vec<(String, u64, u64)>> {
         let name = parts[2].to_string();
         let read_sectors: u64 = parts[5].parse().unwrap_or(0);
         let write_sectors: u64 = parts[9].parse().unwrap_or(0);
-        out.push((name, read_sectors.saturating_mul(512), write_sectors.saturating_mul(512)));
+        out.push((
+            name,
+            read_sectors.saturating_mul(512),
+            write_sectors.saturating_mul(512),
+        ));
     }
     Ok(out)
 }
@@ -113,7 +117,13 @@ impl DiagnosticModule for IoModule {
             report.add_finding(Finding {
                 severity: Severity::Info,
                 category: "process".into(),
-                message: format!("{} (PID {}) – read {}, write {}", comm, pid, format_bytes(r), format_bytes(w)),
+                message: format!(
+                    "{} (PID {}) – read {}, write {}",
+                    comm,
+                    pid,
+                    format_bytes(r),
+                    format_bytes(w)
+                ),
                 details: Some("Cumulative I/O since process start.".into()),
             });
         }

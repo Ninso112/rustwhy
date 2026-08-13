@@ -3,19 +3,19 @@
 use std::str::FromStr;
 
 /// Parse a string into a number, returning None on failure.
-#[must_use] 
+#[must_use]
 pub fn parse_u64(s: &str) -> Option<u64> {
     s.trim().parse().ok()
 }
 
 /// Parse a string into f64, returning None on failure.
-#[must_use] 
+#[must_use]
 pub fn parse_f64(s: &str) -> Option<f64> {
     s.trim().parse().ok()
 }
 
 /// Parse size from human-readable string (e.g. "100M", "1G"). Returns bytes.
-#[must_use] 
+#[must_use]
 pub fn parse_size_human(s: &str) -> Option<u64> {
     let s = s.trim();
     let (num, suffix) = if s.ends_with(|c: char| c.is_ascii_alphabetic()) {
@@ -42,7 +42,7 @@ pub fn parse_size_human(s: &str) -> Option<u64> {
 }
 
 /// Parse key: value line (e.g. from /proc/meminfo).
-#[must_use] 
+#[must_use]
 pub fn parse_key_value(line: &str) -> Option<(&str, &str)> {
     let line = line.trim();
     let colon = line.find(':')?;
@@ -51,7 +51,7 @@ pub fn parse_key_value(line: &str) -> Option<(&str, &str)> {
 }
 
 /// Parse key: value and convert value to T.
-#[must_use] 
+#[must_use]
 pub fn parse_key_value_as<T: FromStr>(line: &str) -> Option<(&str, T)> {
     let (k, v) = parse_key_value(line)?;
     let first_token = v.split_whitespace().next()?;

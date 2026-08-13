@@ -10,7 +10,7 @@ use regex::Regex;
 use std::sync::Arc;
 
 /// Returns the analyze boot performance and slow services via systemd diagnostic module.
-#[must_use] 
+#[must_use]
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(BootModule)
 }
@@ -51,7 +51,11 @@ impl DiagnosticModule for BootModule {
                 .find(|l| l.contains("= ") && l.contains('s'))
                 .and_then(|l| {
                     let re = Regex::new(r"(\d+\.?\d*)\s*s").ok()?;
-                    re.captures(l).and_then(|c| c.get(1))?.as_str().parse::<f64>().ok()
+                    re.captures(l)
+                        .and_then(|c| c.get(1))?
+                        .as_str()
+                        .parse::<f64>()
+                        .ok()
                 });
             if let Some(secs) = total {
                 report.add_metric(Metric {
@@ -67,7 +71,9 @@ impl DiagnosticModule for BootModule {
                     report.add_finding(Finding {
                         severity: Severity::Warning,
                         category: "boot".into(),
-                        message: format!("Boot took {secs:.1}s; consider disabling unnecessary services."),
+                        message: format!(
+                            "Boot took {secs:.1}s; consider disabling unnecessary services."
+                        ),
                         details: Some("Run 'systemd-analyze blame' to see slow units.".into()),
                     });
                 }
@@ -82,7 +88,10 @@ impl DiagnosticModule for BootModule {
             for line in out.lines() {
                 if let Some(ref re) = re {
                     if let Some(cap) = re.captures(line) {
-                        let value: f64 = cap.get(1).and_then(|m| m.as_str().parse().ok()).unwrap_or(0.0);
+                        let value: f64 = cap
+                            .get(1)
+                            .and_then(|m| m.as_str().parse().ok())
+                            .unwrap_or(0.0);
                         let unit = cap.get(2).map(|m| m.as_str()).unwrap_or("ms");
                         let ms = match unit {
                             "ms" => value,
@@ -90,7 +99,10 @@ impl DiagnosticModule for BootModule {
                             "min" => value * 60_000.0,
                             _ => value,
                         };
-                        let name = cap.get(3).map(|m| m.as_str().to_string()).unwrap_or_default();
+                        let name = cap
+                            .get(3)
+                            .map(|m| m.as_str().to_string())
+                            .unwrap_or_default();
                         if ms >= 1000.0 {
                             entries.push((ms / 1000.0, name));
                         }
@@ -113,7 +125,9 @@ impl DiagnosticModule for BootModule {
         } else if report.overall_severity == Severity::Ok {
             report.add_recommendation(Recommendation {
                 priority: 2,
-                action: "Review slow services with 'systemd-analyze blame' and disable unneeded ones.".into(),
+                action:
+                    "Review slow services with 'systemd-analyze blame' and disable unneeded ones."
+                        .into(),
                 command: Some("systemctl list-unit-files --state=enabled".into()),
                 explanation: "Reducing enabled services can speed up boot.".into(),
             });

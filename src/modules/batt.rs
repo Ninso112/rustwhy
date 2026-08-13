@@ -10,7 +10,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 /// Returns the explain battery drain and power-hungry processes diagnostic module.
-#[must_use] 
+#[must_use]
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(BattModule)
 }
@@ -50,7 +50,10 @@ impl DiagnosticModule for BattModule {
             let type_ = read_power_supply_attr(&entry, "type").unwrap_or_default();
             if type_.to_lowercase().contains("battery") {
                 has_battery = true;
-                let name = entry.file_name().map(|o| o.to_string_lossy().into_owned()).unwrap_or_default();
+                let name = entry
+                    .file_name()
+                    .map(|o| o.to_string_lossy().into_owned())
+                    .unwrap_or_default();
                 if let Some(status) = read_power_supply_attr(&entry, "status") {
                     report.add_metric(Metric {
                         name: format!("{name} status"),
@@ -87,7 +90,11 @@ impl DiagnosticModule for BattModule {
                         }
                     }
                 }
-                if config.extra_args.get("detailed").is_some_and(|s| s == "true") {
+                if config
+                    .extra_args
+                    .get("detailed")
+                    .is_some_and(|s| s == "true")
+                {
                     if let Some(energy) = read_power_supply_attr(&entry, "energy_now") {
                         if let Ok(u) = energy.trim().parse::<u64>() {
                             report.add_metric(Metric {
