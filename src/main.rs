@@ -5,7 +5,7 @@
 use clap::CommandFactory;
 use clap::Parser;
 use rustwhy::cli::{Cli, Commands, Shell};
-use rustwhy::core::{ModuleConfig, run_module};
+use rustwhy::core::{run_module, ModuleConfig};
 use rustwhy::modules::{all_modules, get_module};
 use rustwhy::output::{write_report_json, write_report_terminal};
 use std::collections::HashMap;
@@ -34,7 +34,8 @@ fn main() -> anyhow::Result<()> {
     }
 
     let (module_name, config) = command_to_module_config(&cli)?;
-    let module = get_module(&module_name).ok_or_else(|| anyhow::anyhow!("Unknown module: {module_name}"))?;
+    let module =
+        get_module(&module_name).ok_or_else(|| anyhow::anyhow!("Unknown module: {module_name}"))?;
     let rt = tokio::runtime::Runtime::new()?;
     let report = rt.block_on(run_module(module, &config))?;
 
@@ -60,15 +61,13 @@ fn command_to_module_config(cli: &Cli) -> anyhow::Result<(String, ModuleConfig)>
     };
 
     let (name, config) = match &cli.command {
-        Commands::Boot { top, .. } => {
-            (
-                "boot".into(),
-                ModuleConfig {
-                    top_n: *top,
-                    ..config
-                },
-            )
-        }
+        Commands::Boot { top, .. } => (
+            "boot".into(),
+            ModuleConfig {
+                top_n: *top,
+                ..config
+            },
+        ),
         Commands::Cpu {
             watch,
             top,
