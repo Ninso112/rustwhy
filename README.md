@@ -57,6 +57,21 @@ demo can be regenerated with `./scripts/record.sh` (see
 
 ## 📦 Installation
 
+### From a Release Binary (recommended)
+
+Pre-built `x86_64-unknown-linux-gnu` binaries are attached to every
+[GitHub release](https://github.com/Ninso112/rustwhy/releases/latest).
+No Rust toolchain required.
+
+```bash
+# Download and unpack the latest release
+curl -L https://github.com/Ninso112/rustwhy/releases/latest/download/rustwhy-v0.1.0-x86_64-unknown-linux-gnu.tar.gz \
+  | sudo tar -xz -C /usr/local/bin rustwhy
+
+# Verify
+rustwhy --version
+```
+
 ### From AUR (Arch Linux)
 
 Arch Linux users can install RustWhy from the AUR using their favorite AUR helper:
