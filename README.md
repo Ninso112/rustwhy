@@ -1,12 +1,29 @@
 # 🔍 RustWhy
 
 [![CI](https://github.com/Ninso112/rustwhy/actions/workflows/ci.yml/badge.svg)](https://github.com/Ninso112/rustwhy/actions/workflows/ci.yml)
+[![Latest Release](https://img.shields.io/github/v/release/Ninso112/rustwhy)](https://github.com/Ninso112/rustwhy/releases/latest)
+[![AUR](https://img.shields.io/aur/version/rustwhy-git)](https://aur.archlinux.org/packages/rustwhy-git)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Rust Version](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org)
 
 **Unified Linux System Diagnostics – Understand WHY things happen**
 
 RustWhy is a comprehensive system diagnostic tool that explains why your Linux system behaves a certain way. It combines 13 specialized diagnostic modules into one powerful CLI, providing actionable insights in plain language.
+
+## 🎬 Demo
+
+<p align="center">
+  <img src="assets/screenshots/demo.gif" alt="rustwhy demo: cpu, disk, all" width="900">
+</p>
+
+A live recording of the most representative commands — `rustwhy cpu`,
+`rustwhy disk`, and `rustwhy all` — captured with [asciinema] and rendered
+to GIF via [agg]. The source `.cast` file lives next to the GIF so the
+demo can be regenerated with `./scripts/record.sh` (see
+[`assets/screenshots/README.md`](assets/screenshots/README.md)).
+
+[asciinema]: https://asciinema.org/
+[agg]: https://github.com/asciinema/agg
 
 ## ✨ Features
 
