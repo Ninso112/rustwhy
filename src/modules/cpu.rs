@@ -9,7 +9,7 @@ use std::sync::Arc;
 use sysinfo::System;
 
 /// Returns the explain high CPU usage and identify top consumers diagnostic module.
-#[must_use] 
+#[must_use]
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(CpuModule)
 }
@@ -59,7 +59,9 @@ impl DiagnosticModule for CpuModule {
 
         report.add_metric(Metric {
             name: "Load Average".into(),
-            value: MetricValue::Text(format!("{load_one:.2} / {load_five:.2} / {load_fifteen:.2} (1m / 5m / 15m)")),
+            value: MetricValue::Text(format!(
+                "{load_one:.2} / {load_five:.2} / {load_fifteen:.2} (1m / 5m / 15m)"
+            )),
             unit: None,
             threshold: None,
         });
@@ -67,7 +69,10 @@ impl DiagnosticModule for CpuModule {
             name: "CPU Usage".into(),
             value: MetricValue::Float(f64::from(total_cpu)),
             unit: Some("%".into()),
-            threshold: Some(crate::core::report::Threshold { warning: 70.0, critical: 90.0 }),
+            threshold: Some(crate::core::report::Threshold {
+                warning: 70.0,
+                critical: 90.0,
+            }),
         });
         report.add_metric(Metric {
             name: "CPU Cores".into(),
@@ -78,7 +83,11 @@ impl DiagnosticModule for CpuModule {
 
         let top_n = config.top_n;
         let mut processes: Vec<_> = sys.processes().iter().collect();
-        processes.sort_by(|a, b| b.1.cpu_usage().partial_cmp(&a.1.cpu_usage()).unwrap_or(std::cmp::Ordering::Equal));
+        processes.sort_by(|a, b| {
+            b.1.cpu_usage()
+                .partial_cmp(&a.1.cpu_usage())
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         let top_processes: Vec<_> = processes.into_iter().take(top_n).collect();
 
         for (pid, proc_ref) in top_processes {
@@ -88,10 +97,21 @@ impl DiagnosticModule for CpuModule {
             }
             let name = proc_ref.name().to_string_lossy().into_owned();
             let mem_kb = proc_ref.memory() / 1024;
-            let uid = proc_ref.user_id().map_or_else(|| "?".into(), |u| u.to_string());
-            let finding_msg = format!("{} (PID {}) consuming {:.1}% CPU", name, pid.as_u32(), usage);
+            let uid = proc_ref
+                .user_id()
+                .map_or_else(|| "?".into(), |u| u.to_string());
+            let finding_msg = format!(
+                "{} (PID {}) consuming {:.1}% CPU",
+                name,
+                pid.as_u32(),
+                usage
+            );
             report.add_finding(Finding {
-                severity: if usage > 50.0 { Severity::Warning } else { Severity::Info },
+                severity: if usage > 50.0 {
+                    Severity::Warning
+                } else {
+                    Severity::Info
+                },
                 category: "process".into(),
                 message: finding_msg,
                 details: Some(format!("Memory: {mem_kb} KB, User: {uid}")),
@@ -101,9 +121,12 @@ impl DiagnosticModule for CpuModule {
         if total_cpu > 80.0 {
             report.add_recommendation(Recommendation {
                 priority: 1,
-                action: "Identify and reduce load from top processes (close tabs, stop heavy tasks).".into(),
+                action:
+                    "Identify and reduce load from top processes (close tabs, stop heavy tasks)."
+                        .into(),
                 command: Some("ps aux --sort=-%cpu | head -n 15".into()),
-                explanation: "High CPU often comes from browsers, IDEs, or background indexing.".into(),
+                explanation: "High CPU often comes from browsers, IDEs, or background indexing."
+                    .into(),
             });
         }
 

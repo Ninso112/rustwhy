@@ -15,7 +15,11 @@ pub fn write_report<W: Write>(w: &mut W, report: &DiagnosticReport, use_color: b
     }
     let _ = writeln!(w, "{}", "═".repeat(60));
 
-    let status_line = format!("Overall Status: {} - {}", severity_icon(report.overall_severity, use_color), report.summary);
+    let status_line = format!(
+        "Overall Status: {} - {}",
+        severity_icon(report.overall_severity, use_color),
+        report.summary
+    );
     let _ = writeln!(w, "\n{status_line}");
 
     if !report.metrics.is_empty() {
@@ -53,7 +57,13 @@ pub fn write_report<W: Write>(w: &mut W, report: &DiagnosticReport, use_color: b
     if !report.recommendations.is_empty() {
         let _ = writeln!(w, "\n📋 RECOMMENDATIONS:\n");
         for (i, r) in report.recommendations.iter().enumerate() {
-            let prio = if r.priority <= 2 { "HIGH" } else if r.priority <= 4 { "MEDIUM" } else { "LOW" };
+            let prio = if r.priority <= 2 {
+                "HIGH"
+            } else if r.priority <= 4 {
+                "MEDIUM"
+            } else {
+                "LOW"
+            };
             let line = format!("   {}. [{}] {}", i + 1, prio, r.action);
             if use_color {
                 let _ = writeln!(w, "{}", line.bright_yellow());

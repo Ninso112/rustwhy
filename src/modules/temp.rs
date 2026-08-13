@@ -10,7 +10,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 /// Returns the analyze temperatures and thermal throttling diagnostic module.
-#[must_use] 
+#[must_use]
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(TempModule)
 }
@@ -29,7 +29,12 @@ fn read_thermal_zones() -> Vec<(String, i32)> {
         let name = read_first_line(&type_path)
             .ok()
             .flatten()
-            .unwrap_or_else(|| entry.file_name().map(|o| o.to_string_lossy().into_owned()).unwrap_or_default());
+            .unwrap_or_else(|| {
+                entry
+                    .file_name()
+                    .map(|o| o.to_string_lossy().into_owned())
+                    .unwrap_or_default()
+            });
         if let Ok(Some(s)) = read_first_line(&temp_path) {
             if let Ok(millideg) = s.trim().parse::<i32>() {
                 out.push((name, millideg / 1000));
@@ -50,9 +55,17 @@ fn read_hwmon_temps() -> Vec<(String, i32)> {
         let base_name = read_first_line(&name_path)
             .ok()
             .flatten()
-            .unwrap_or_else(|| entry.file_name().map(|o| o.to_string_lossy().into_owned()).unwrap_or_default());
+            .unwrap_or_else(|| {
+                entry
+                    .file_name()
+                    .map(|o| o.to_string_lossy().into_owned())
+                    .unwrap_or_default()
+            });
         for temp_entry in list_dir(&entry).unwrap_or_default() {
-            let fname = temp_entry.file_name().map(|o| o.to_string_lossy().into_owned()).unwrap_or_default();
+            let fname = temp_entry
+                .file_name()
+                .map(|o| o.to_string_lossy().into_owned())
+                .unwrap_or_default();
             if fname.starts_with("temp") && fname.ends_with("_input") {
                 if let Ok(Some(s)) = read_first_line(&temp_entry) {
                     if let Ok(millideg) = s.trim().parse::<i32>() {
@@ -78,7 +91,10 @@ impl DiagnosticModule for TempModule {
 
     async fn run(&self, config: &ModuleConfig) -> Result<DiagnosticReport> {
         let mut report = DiagnosticReport::new("temp", "Temperature analysis");
-        let only_critical = config.extra_args.get("critical").is_some_and(|s| s == "true");
+        let only_critical = config
+            .extra_args
+            .get("critical")
+            .is_some_and(|s| s == "true");
 
         let mut all_temps: Vec<(String, i32)> = Vec::new();
         all_temps.extend(read_thermal_zones());
@@ -88,7 +104,8 @@ impl DiagnosticModule for TempModule {
             report.add_finding(Finding {
                 severity: Severity::Info,
                 category: "temp".into(),
-                message: "No temperature sensors found (/sys/class/thermal, /sys/class/hwmon).".into(),
+                message: "No temperature sensors found (/sys/class/thermal, /sys/class/hwmon)."
+                    .into(),
                 details: None,
             });
             return Ok(report);

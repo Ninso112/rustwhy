@@ -5,7 +5,7 @@
 use clap::CommandFactory;
 use clap::Parser;
 use rustwhy::cli::{Cli, Commands, Shell};
-use rustwhy::core::{ModuleConfig, run_module};
+use rustwhy::core::{run_module, ModuleConfig};
 use rustwhy::modules::{all_modules, get_module};
 use rustwhy::output::{write_report_json, write_report_terminal};
 use std::collections::HashMap;
@@ -34,7 +34,8 @@ fn main() -> anyhow::Result<()> {
     }
 
     let (module_name, config) = command_to_module_config(&cli)?;
-    let module = get_module(&module_name).ok_or_else(|| anyhow::anyhow!("Unknown module: {module_name}"))?;
+    let module =
+        get_module(&module_name).ok_or_else(|| anyhow::anyhow!("Unknown module: {module_name}"))?;
     let rt = tokio::runtime::Runtime::new()?;
     let report = rt.block_on(run_module(module, &config))?;
 
@@ -60,18 +61,48 @@ fn command_to_module_config(cli: &Cli) -> anyhow::Result<(String, ModuleConfig)>
     };
 
     let (name, config) = match &cli.command {
-        Commands::Boot { top, .. } => ("boot".into(), ModuleConfig { top_n: *top, ..config }),
-        Commands::Cpu { watch, top, interval, .. } => (
+        Commands::Boot { top, .. } => (
+            "boot".into(),
+            ModuleConfig {
+                top_n: *top,
+                ..config
+            },
+        ),
+        Commands::Cpu {
+            watch,
+            top,
+            interval,
+            ..
+        } => (
             "cpu".into(),
-            ModuleConfig { watch: *watch, top_n: *top, interval: *interval, ..config },
+            ModuleConfig {
+                watch: *watch,
+                top_n: *top,
+                interval: *interval,
+                ..config
+            },
         ),
         Commands::Mem { top, swap, .. } => {
             if *swap {
                 extra.insert("swap".into(), "true".into());
             }
-            ("mem".into(), ModuleConfig { top_n: *top, extra_args: extra, ..config })
+            (
+                "mem".into(),
+                ModuleConfig {
+                    top_n: *top,
+                    extra_args: extra,
+                    ..config
+                },
+            )
         }
-        Commands::Disk { path, depth, old, large, hidden, .. } => {
+        Commands::Disk {
+            path,
+            depth,
+            old,
+            large,
+            hidden,
+            ..
+        } => {
             extra.insert("path".into(), path.clone().unwrap_or_else(|| "/".into()));
             extra.insert("depth".into(), depth.to_string());
             if let Some(o) = old {
@@ -81,60 +112,133 @@ fn command_to_module_config(cli: &Cli) -> anyhow::Result<(String, ModuleConfig)>
                 extra.insert("large".into(), l.clone());
             }
             extra.insert("hidden".into(), hidden.to_string());
-            ("disk".into(), ModuleConfig { extra_args: extra, ..config })
+            (
+                "disk".into(),
+                ModuleConfig {
+                    extra_args: extra,
+                    ..config
+                },
+            )
         }
-        Commands::Io { watch, top, interval, device, .. } => {
+        Commands::Io {
+            watch,
+            top,
+            interval,
+            device,
+            ..
+        } => {
             if let Some(ref d) = device {
                 extra.insert("device".into(), d.clone());
             }
             (
                 "io".into(),
-                ModuleConfig { watch: *watch, top_n: *top, interval: *interval, extra_args: extra, ..config },
+                ModuleConfig {
+                    watch: *watch,
+                    top_n: *top,
+                    interval: *interval,
+                    extra_args: extra,
+                    ..config
+                },
             )
-        },
+        }
         Commands::Net { host, .. } => {
             extra.insert("host".into(), host.clone());
-            ("net".into(), ModuleConfig { extra_args: extra, ..config })
+            (
+                "net".into(),
+                ModuleConfig {
+                    extra_args: extra,
+                    ..config
+                },
+            )
         }
-        Commands::Fan { watch, interval, threshold, .. } => {
+        Commands::Fan {
+            watch,
+            interval,
+            threshold,
+            ..
+        } => {
             if let Some(t) = threshold {
                 extra.insert("threshold".into(), t.to_string());
             }
             (
                 "fan".into(),
-                ModuleConfig { watch: *watch, interval: *interval, extra_args: extra, ..config },
+                ModuleConfig {
+                    watch: *watch,
+                    interval: *interval,
+                    extra_args: extra,
+                    ..config
+                },
             )
         }
-        Commands::Temp { watch, interval, critical, .. } => {
+        Commands::Temp {
+            watch,
+            interval,
+            critical,
+            ..
+        } => {
             extra.insert("critical".into(), critical.to_string());
             (
                 "temp".into(),
-                ModuleConfig { watch: *watch, interval: *interval, extra_args: extra, ..config },
+                ModuleConfig {
+                    watch: *watch,
+                    interval: *interval,
+                    extra_args: extra,
+                    ..config
+                },
             )
         }
         Commands::Gpu { .. } => ("gpu".into(), config),
         Commands::Batt { detailed, .. } => {
             extra.insert("detailed".into(), detailed.to_string());
-            ("batt".into(), ModuleConfig { extra_args: extra, ..config })
+            (
+                "batt".into(),
+                ModuleConfig {
+                    extra_args: extra,
+                    ..config
+                },
+            )
         }
         Commands::Sleep { inhibitors, .. } => {
             extra.insert("inhibitors".into(), inhibitors.to_string());
-            ("sleep".into(), ModuleConfig { extra_args: extra, ..config })
+            (
+                "sleep".into(),
+                ModuleConfig {
+                    extra_args: extra,
+                    ..config
+                },
+            )
         }
         Commands::Usb { device, dmesg, .. } => {
             if let Some(ref d) = device {
                 extra.insert("device".into(), d.clone());
             }
             extra.insert("dmesg".into(), dmesg.to_string());
-            ("usb".into(), ModuleConfig { extra_args: extra, ..config })
+            (
+                "usb".into(),
+                ModuleConfig {
+                    extra_args: extra,
+                    ..config
+                },
+            )
         }
-        Commands::Mount { mountpoint, nfs, options, .. } => {
+        Commands::Mount {
+            mountpoint,
+            nfs,
+            options,
+            ..
+        } => {
             if let Some(ref m) = mountpoint {
                 extra.insert("mountpoint".into(), m.clone());
             }
             extra.insert("nfs".into(), nfs.to_string());
             extra.insert("options".into(), options.to_string());
-            ("mount".into(), ModuleConfig { extra_args: extra, ..config })
+            (
+                "mount".into(),
+                ModuleConfig {
+                    extra_args: extra,
+                    ..config
+                },
+            )
         }
         Commands::All { .. } | Commands::Completions { .. } => {
             anyhow::bail!("Unreachable")

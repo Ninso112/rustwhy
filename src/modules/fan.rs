@@ -10,7 +10,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 /// Returns the explain fan activity and correlate with temperature/load diagnostic module.
-#[must_use] 
+#[must_use]
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(FanModule)
 }
@@ -23,15 +23,25 @@ fn read_hwmon_fans() -> Vec<(String, u64)> {
     if !hwmon.exists() {
         return out;
     }
-    let Ok(entries) = list_dir(hwmon) else { return out };
+    let Ok(entries) = list_dir(hwmon) else {
+        return out;
+    };
     for entry in entries {
         let name_path = entry.join("name");
         let name = read_first_line(&name_path)
             .ok()
             .flatten()
-            .unwrap_or_else(|| entry.file_name().map(|o| o.to_string_lossy().into_owned()).unwrap_or_default());
+            .unwrap_or_else(|| {
+                entry
+                    .file_name()
+                    .map(|o| o.to_string_lossy().into_owned())
+                    .unwrap_or_default()
+            });
         for fan_entry in list_dir(&entry).unwrap_or_default() {
-            let fname = fan_entry.file_name().map(|o| o.to_string_lossy().into_owned()).unwrap_or_default();
+            let fname = fan_entry
+                .file_name()
+                .map(|o| o.to_string_lossy().into_owned())
+                .unwrap_or_default();
             if fname.starts_with("fan") && fname.ends_with("_input") {
                 if let Ok(Some(s)) = read_first_line(&fan_entry) {
                     if let Ok(rpm) = s.trim().parse::<u64>() {
@@ -90,7 +100,9 @@ impl DiagnosticModule for FanModule {
                     report.add_finding(Finding {
                         severity: Severity::Info,
                         category: "fan".into(),
-                        message: format!("{label} running at {rpm} RPM (above {rpm_threshold} RPM threshold)"),
+                        message: format!(
+                            "{label} running at {rpm} RPM (above {rpm_threshold} RPM threshold)"
+                        ),
                         details: Some("High fan speed usually indicates thermal load.".into()),
                     });
                 }

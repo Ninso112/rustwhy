@@ -9,7 +9,7 @@ use async_trait::async_trait;
 use std::sync::Arc;
 
 /// Returns the diagnose network issues: connectivity, DNS, interfaces diagnostic module.
-#[must_use] 
+#[must_use]
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(NetModule)
 }
@@ -117,13 +117,17 @@ fn collect_interface_stats(report: &mut DiagnosticReport) {
                     if rx_bytes > 0 || tx_bytes > 0 {
                         report.add_metric(Metric {
                             name: format!("{name} rx"),
-                            value: MetricValue::Integer(i64::try_from(rx_bytes).unwrap_or(i64::MAX)),
+                            value: MetricValue::Integer(
+                                i64::try_from(rx_bytes).unwrap_or(i64::MAX),
+                            ),
                             unit: Some("bytes".into()),
                             threshold: None,
                         });
                         report.add_metric(Metric {
                             name: format!("{name} tx"),
-                            value: MetricValue::Integer(i64::try_from(tx_bytes).unwrap_or(i64::MAX)),
+                            value: MetricValue::Integer(
+                                i64::try_from(tx_bytes).unwrap_or(i64::MAX),
+                            ),
                             unit: Some("bytes".into()),
                             threshold: None,
                         });
@@ -145,7 +149,10 @@ impl DiagnosticModule for NetModule {
     }
 
     async fn run(&self, config: &ModuleConfig) -> Result<DiagnosticReport> {
-        let host = config.extra_args.get("host").map_or("8.8.8.8", String::as_str);
+        let host = config
+            .extra_args
+            .get("host")
+            .map_or("8.8.8.8", String::as_str);
         let mut report = DiagnosticReport::new("net", "Network diagnostics");
 
         report.add_metric(Metric {

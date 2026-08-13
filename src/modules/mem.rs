@@ -11,7 +11,7 @@ use std::sync::Arc;
 use sysinfo::System;
 
 /// Returns the explain memory consumption and identify top consumers diagnostic module.
-#[must_use] 
+#[must_use]
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(MemModule)
 }
@@ -143,7 +143,11 @@ impl DiagnosticModule for MemModule {
                 severity: Severity::Warning,
                 category: "mem".into(),
                 message: "Memory usage is very high; OOM risk if load increases.".into(),
-                details: Some(format!("Used {} of {}", format_bytes(mem_used_bytes), format_bytes(mem_total_bytes))),
+                details: Some(format!(
+                    "Used {} of {}",
+                    format_bytes(mem_used_bytes),
+                    format_bytes(mem_total_bytes)
+                )),
             });
         }
 

@@ -10,7 +10,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 /// Returns the diagnose sleep/suspend issues and inhibitors diagnostic module.
-#[must_use] 
+#[must_use]
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(SleepModule)
 }
@@ -30,7 +30,10 @@ impl DiagnosticModule for SleepModule {
     async fn run(&self, config: &ModuleConfig) -> Result<DiagnosticReport> {
         let mut report = DiagnosticReport::new("sleep", "Sleep/suspend diagnostics");
 
-        if config.extra_args.get("inhibitors").is_none_or(|s| s == "true")
+        if config
+            .extra_args
+            .get("inhibitors")
+            .is_none_or(|s| s == "true")
             && command_exists("systemd-inhibit")
         {
             if let Ok(out) = run_cmd(&["systemd-inhibit", "--list", "--no-pager"]) {
@@ -38,7 +41,9 @@ impl DiagnosticModule for SleepModule {
                 if blockers.len() > 1 {
                     report.add_metric(Metric {
                         name: "Active inhibitors".into(),
-                        value: MetricValue::Integer(i64::try_from(blockers.len()).unwrap_or(i64::MAX)),
+                        value: MetricValue::Integer(
+                            i64::try_from(blockers.len()).unwrap_or(i64::MAX),
+                        ),
                         unit: None,
                         threshold: None,
                     });
@@ -86,7 +91,8 @@ impl DiagnosticModule for SleepModule {
             report.add_finding(Finding {
                 severity: Severity::Info,
                 category: "sleep".into(),
-                message: "No inhibitor or wakeup data available (systemd-inhibit or /sys/power).".into(),
+                message: "No inhibitor or wakeup data available (systemd-inhibit or /sys/power)."
+                    .into(),
                 details: None,
             });
         }

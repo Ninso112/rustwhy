@@ -58,8 +58,7 @@ pub fn run_cmd_timeout(args: &[&str], timeout: Duration) -> Result<String> {
                     });
                     anyhow::bail!("Command failed: {} {}", args.join(" "), stderr);
                 }
-                return String::from_utf8(stdout)
-                    .context("Command output was not valid UTF-8");
+                return String::from_utf8(stdout).context("Command output was not valid UTF-8");
             }
             Ok(None) => {
                 if start.elapsed() >= timeout {
@@ -74,7 +73,7 @@ pub fn run_cmd_timeout(args: &[&str], timeout: Duration) -> Result<String> {
 }
 
 /// Check if a command is available in PATH.
-#[must_use] 
+#[must_use]
 pub fn command_exists(name: &str) -> bool {
     which::which(name).is_ok()
 }

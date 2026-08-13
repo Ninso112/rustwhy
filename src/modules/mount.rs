@@ -10,7 +10,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 /// Returns the diagnose mount point issues and filesystem checks diagnostic module.
-#[must_use] 
+#[must_use]
 pub fn module() -> Arc<dyn DiagnosticModule> {
     Arc::new(MountModule)
 }
@@ -31,7 +31,10 @@ impl DiagnosticModule for MountModule {
         let mut report = DiagnosticReport::new("mount", "Mount diagnostics");
         let mountpoint_filter = config.extra_args.get("mountpoint").map(String::as_str);
         let check_nfs = config.extra_args.get("nfs").is_some_and(|s| s == "true");
-        let show_options = config.extra_args.get("options").is_some_and(|s| s == "true");
+        let show_options = config
+            .extra_args
+            .get("options")
+            .is_some_and(|s| s == "true");
 
         let mounts_content = match std::fs::read_to_string("/proc/mounts") {
             Ok(c) => c,
@@ -66,7 +69,10 @@ impl DiagnosticModule for MountModule {
             }
             count += 1;
 
-            if options.contains("ro") && !device.starts_with("tmpfs") && !device.starts_with("cgroup") {
+            if options.contains("ro")
+                && !device.starts_with("tmpfs")
+                && !device.starts_with("cgroup")
+            {
                 ro_mounts.push(format!("{device} on {mountpoint}"));
             }
             if check_nfs && (fstype == "nfs" || fstype == "nfs4") {
@@ -107,7 +113,10 @@ impl DiagnosticModule for MountModule {
         }
 
         if let Ok(Some(fstab)) = read_file_optional(Path::new("/etc/fstab")) {
-            let fstab_entries: usize = fstab.lines().filter(|l| !l.trim().is_empty() && !l.trim().starts_with('#')).count();
+            let fstab_entries: usize = fstab
+                .lines()
+                .filter(|l| !l.trim().is_empty() && !l.trim().starts_with('#'))
+                .count();
             report.add_metric(Metric {
                 name: "fstab entries".into(),
                 value: MetricValue::Integer(i64::try_from(fstab_entries).unwrap_or(i64::MAX)),

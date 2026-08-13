@@ -18,7 +18,7 @@ pub enum Severity {
 
 impl Severity {
     /// Returns the maximum of two severities (higher = worse).
-    #[must_use] 
+    #[must_use]
     pub fn max(self, other: Self) -> Self {
         if self > other {
             self
@@ -28,7 +28,7 @@ impl Severity {
     }
 
     /// Human-readable label for terminal output.
-    #[must_use] 
+    #[must_use]
     pub fn label(&self) -> &'static str {
         match self {
             Severity::Ok => "OK",
