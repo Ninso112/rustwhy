@@ -178,7 +178,11 @@ rustwhy mount --nfs
 rustwhy completions bash > ~/.local/share/bash-completion/completions/rustwhy
 rustwhy completions zsh > ~/.zsh/completions/_rustwhy
 rustwhy completions fish > ~/.config/fish/completions/rustwhy.fish
+rustwhy completions powershell > _rustwhy.ps1
 ```
+
+Or from the project root: `make completions`. Generated scripts land in
+[`assets/completions/`](assets/completions/README.md).
 
 ## 📖 Documentation
 
