@@ -40,3 +40,42 @@ Use conventional commits:
 2. Implement the `DiagnosticModule` trait (see `src/core/traits.rs`).
 3. Register the module in `src/modules/mod.rs` (`get_module`, `all_modules`).
 4. Add the corresponding subcommand in `src/cli/args.rs` and wire it in `src/main.rs`.
+
+## Good First Issues
+
+If you are new to the project, look for issues labeled
+[`good first issue`](https://github.com/Ninso112/rustwhy/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22).
+These are scoped, well-described, and small enough to land in a single PR.
+
+Typical first-issue tasks include:
+
+- Tightening severity thresholds in an existing module.
+- Adding a new `recommendation` to a finding that currently has none.
+- Writing an integration test for an under-tested module.
+- Improving a single rustdoc comment.
+
+## Issue Labels
+
+A quick reference for the labels maintainers use on issues and PRs:
+
+| Label                  | Meaning                                                    |
+| ---------------------- | ---------------------------------------------------------- |
+| `bug`                  | Confirmed incorrect behavior.                              |
+| `enhancement`          | New feature or improvement to existing functionality.      |
+| `module-request`       | Suggestion for a brand-new diagnostic module.              |
+| `good first issue`     | Suitable for first-time contributors.                      |
+| `help wanted`          | Maintainer would welcome outside help.                     |
+| `docs`                 | Documentation-only change (no code impact).                |
+| `question`             | User is asking, not filing a bug or feature request.       |
+
+If you open an issue, please pick the most specific label that fits.
+
+## First-Time Contributor Checklist
+
+Before opening your first PR:
+
+- [ ] `cargo fmt --all -- --check` exits 0.
+- [ ] `cargo clippy --all-features -- -D warnings` exits 0.
+- [ ] `cargo test --all-features` exits 0.
+- [ ] Your branch is rebased on the latest `main`.
+- [ ] The PR description links the issue it closes (e.g. `Closes #42`).
