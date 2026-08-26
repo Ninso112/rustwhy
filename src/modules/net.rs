@@ -81,19 +81,27 @@ fn check_dns_resolution(report: &mut DiagnosticReport, host: &str) {
     };
     if let Ok(out) = run_cmd(&["getent", "hosts", hostname]) {
         if !out.trim().is_empty() {
+            let resolved = out.lines().next().unwrap_or("").to_string();
+            report.add_metric(Metric {
+                name: format!("DNS {hostname}"),
+                value: MetricValue::Text(resolved),
+                unit: None,
+                threshold: None,
+            });
+        } else {
             report.add_finding(Finding {
-                severity: Severity::Ok,
+                severity: Severity::Warning,
                 category: "dns".into(),
-                message: format!("DNS resolution for {hostname} OK"),
-                details: Some(out.lines().next().unwrap_or("").to_string()),
+                message: format!("DNS resolution for {hostname} returned no result"),
+                details: Some("Check /etc/resolv.conf and network connectivity.".into()),
             });
         }
     } else if run_cmd(&["host", hostname]).is_ok() {
-        report.add_finding(Finding {
-            severity: Severity::Ok,
-            category: "dns".into(),
-            message: format!("DNS resolution for {hostname} OK"),
-            details: None,
+        report.add_metric(Metric {
+            name: format!("DNS {hostname}"),
+            value: MetricValue::Text("resolved".into()),
+            unit: None,
+            threshold: None,
         });
     } else {
         report.add_finding(Finding {

@@ -38,3 +38,36 @@ impl Severity {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ordering() {
+        assert!(Severity::Critical > Severity::Warning);
+        assert!(Severity::Warning > Severity::Info);
+        assert!(Severity::Info > Severity::Ok);
+    }
+
+    #[test]
+    fn max_picks_higher() {
+        assert_eq!(Severity::Ok.max(Severity::Warning), Severity::Warning);
+        assert_eq!(Severity::Warning.max(Severity::Ok), Severity::Warning);
+        assert_eq!(Severity::Critical.max(Severity::Info), Severity::Critical);
+        assert_eq!(Severity::Info.max(Severity::Info), Severity::Info);
+    }
+
+    #[test]
+    fn label_text() {
+        assert_eq!(Severity::Ok.label(), "OK");
+        assert_eq!(Severity::Info.label(), "INFO");
+        assert_eq!(Severity::Warning.label(), "WARNING");
+        assert_eq!(Severity::Critical.label(), "CRITICAL");
+    }
+
+    #[test]
+    fn default_is_ok() {
+        assert_eq!(Severity::default(), Severity::Ok);
+    }
+}

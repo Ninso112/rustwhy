@@ -7,6 +7,9 @@ use std::sync::Arc;
 
 /// Runs a single diagnostic module and returns its report.
 ///
+/// Off-loads potentially blocking I/O (procfs, sysfs, child processes)
+/// to a blocking thread so the async runtime is not stalled.
+///
 /// # Errors
 ///
 /// Returns an error if the module is not available on this system
@@ -18,10 +21,25 @@ pub async fn run_module(
     if !module.is_available() {
         anyhow::bail!("Module {} is not available on this system", module.name());
     }
-    module.run(config).await
+    let config = config.clone();
+    tokio::task::spawn_blocking(move || {
+        let rt = tokio::runtime::Handle::try_current();
+        match rt {
+            Ok(handle) => handle.block_on(module.run(&config)),
+            Err(_) => {
+                // No tokio runtime available; fall back to a fresh one.
+                let rt = tokio::runtime::Builder::new_current_thread()
+                    .enable_all()
+                    .build()?;
+                rt.block_on(module.run(&config))
+            }
+        }
+    })
+    .await
+    .map_err(|e| anyhow::anyhow!("Module task join error: {e}"))?
 }
 
-/// Runs multiple modules and collects reports (e.g. for `rustwhy all`).
+/// Runs multiple modules sequentially and collects reports.
 pub async fn run_all_modules(
     modules: Vec<Arc<dyn DiagnosticModule>>,
     config: &ModuleConfig,

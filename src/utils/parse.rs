@@ -57,3 +57,62 @@ pub fn parse_key_value_as<T: FromStr>(line: &str) -> Option<(&str, T)> {
     let first_token = v.split_whitespace().next()?;
     Some((k, first_token.parse().ok()?))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_u64_basic() {
+        assert_eq!(parse_u64("42"), Some(42));
+        assert_eq!(parse_u64("  7  "), Some(7));
+        assert_eq!(parse_u64("not a number"), None);
+    }
+
+    #[test]
+    fn parse_f64_basic() {
+        assert_eq!(parse_f64("3.14"), Some(3.14));
+        assert_eq!(parse_f64("-1.5"), Some(-1.5));
+        assert_eq!(parse_f64("nope"), None);
+    }
+
+    #[test]
+    fn parse_size_human_units() {
+        assert_eq!(parse_size_human("100"), Some(100));
+        assert_eq!(parse_size_human("100K"), Some(100_000));
+        assert_eq!(parse_size_human("100KB"), Some(100_000));
+        assert_eq!(parse_size_human("100KiB"), Some(102_400));
+        assert_eq!(parse_size_human("1M"), Some(1_000_000));
+        assert_eq!(parse_size_human("2MiB"), Some(2 * 1024 * 1024));
+        assert_eq!(parse_size_human("1G"), Some(1_000_000_000));
+        assert_eq!(parse_size_human("3GiB"), Some(3 * 1024 * 1024 * 1024));
+        assert_eq!(parse_size_human("1T"), Some(1_000_000_000_000));
+    }
+
+    #[test]
+    fn parse_size_human_overflow_returns_none() {
+        // 2^63 TiB would overflow u64
+        assert!(parse_size_human("99999999999999TiB").is_none());
+    }
+
+    #[test]
+    fn parse_size_human_invalid() {
+        assert_eq!(parse_size_human("abc"), None);
+        assert_eq!(parse_size_human("100XB"), None);
+    }
+
+    #[test]
+    fn parse_key_value_basic() {
+        assert_eq!(
+            parse_key_value("MemTotal: 16384000 kB"),
+            Some(("MemTotal", "16384000 kB"))
+        );
+        assert_eq!(parse_key_value("no colon here"), None);
+    }
+
+    #[test]
+    fn parse_key_value_as_basic() {
+        let parsed: Option<(&str, u64)> = parse_key_value_as("MemTotal: 16384000 kB");
+        assert_eq!(parsed, Some(("MemTotal", 16_384_000)));
+    }
+}

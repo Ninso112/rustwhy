@@ -9,7 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- _No unreleased changes yet._
+- Watch mode implementation in `main.rs` for `cpu`, `io`, `fan`, `temp`, and `gpu` (previously a no-op flag).
+- Unit tests for `core::severity`, `core::report`, `utils::parse`, and `utils::format`.
+
+### Fixed
+
+- `mem` module: `--swap` flag was effectively always on; the inverted `is_none_or` check now correctly defaults to off.
+- `batt` module: `upower` recommendation was always emitted, even when no battery was present.
+- `net` module: DNS resolution emitted a `Severity::Ok` finding, which contradicted the severity ordering; now reported as a `Metric` and a real `Warning` finding on failure.
+- `boot` module: the `systemd-analyze blame` regex was matched against `Option<&Regex>` on every line; now compiled once before the loop and consumed by `if let Ok(re) = ...` (avoids the redundant `.ok()` clippy lint).
+- `terminal` output: silently swallowed every `writeln!` error with `let _ = ...`; now returns `anyhow::Result` so the binary can surface broken pipes and disk-full conditions.
+
+### Changed
+
+- `run_module` now dispatches module work through `tokio::task::spawn_blocking` so synchronous procfs/sysfs reads never stall the async runtime.
+- Removed unused dependencies from `Cargo.toml`: `nix`, `procfs`, `dns-lookup`, `surge-ping`, `reqwest`, `lazy_static`, `indicatif`, `console`, `tracing`, `tracing-subscriber`, `thiserror`, `toml`, `nvml-wrapper`, `mockall`. Keeps the `nvidia` feature as a no-op stub for now (NVML bindings are no longer wired in).
 
 ## [0.1.0] - 2026-08-13
 

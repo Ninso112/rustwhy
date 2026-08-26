@@ -5,11 +5,13 @@
 use clap::CommandFactory;
 use clap::Parser;
 use rustwhy::cli::{Cli, Commands, Shell};
-use rustwhy::core::{run_module, ModuleConfig};
+use rustwhy::core::{run_module, DiagnosticModule, ModuleConfig};
 use rustwhy::modules::{all_modules, get_module};
 use rustwhy::output::{write_report_json, write_report_terminal};
 use std::collections::HashMap;
 use std::io::{self, Write};
+use std::sync::Arc;
+use std::time::Duration;
 
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
@@ -37,16 +39,60 @@ fn main() -> anyhow::Result<()> {
     let module =
         get_module(&module_name).ok_or_else(|| anyhow::anyhow!("Unknown module: {module_name}"))?;
     let rt = tokio::runtime::Runtime::new()?;
-    let report = rt.block_on(run_module(module, &config))?;
 
-    let mut stdout = io::stdout().lock();
-    if cli.json {
-        write_report_json(&mut stdout, &report)?;
+    if config.watch {
+        run_watch_mode(&rt, module, &config, cli.json, !cli.no_color)?;
     } else {
-        write_report_terminal(&mut stdout, &report, !cli.no_color);
+        let report = rt.block_on(run_module(module, &config))?;
+        let mut stdout = io::stdout().lock();
+        if cli.json {
+            write_report_json(&mut stdout, &report)?;
+        } else {
+            write_report_terminal(&mut stdout, &report, !cli.no_color)?;
+        }
+        stdout.flush()?;
     }
-    stdout.flush()?;
     Ok(())
+}
+
+fn run_watch_mode(
+    rt: &tokio::runtime::Runtime,
+    module: Arc<dyn DiagnosticModule>,
+    config: &ModuleConfig,
+    json: bool,
+    use_color: bool,
+) -> anyhow::Result<()> {
+    let interval = Duration::from_secs(config.interval.max(1));
+    let mut stdout = io::stdout().lock();
+    let mut stderr = io::stderr().lock();
+
+    loop {
+        if !json && use_color {
+            // Clear screen + move cursor home for live updates
+            let _ = write!(stdout, "\x1b[2J\x1b[H");
+        }
+
+        match rt.block_on(run_module(module.clone(), config)) {
+            Ok(report) => {
+                if json {
+                    write_report_json(&mut stdout, &report)?;
+                } else {
+                    write_report_terminal(&mut stdout, &report, use_color)?;
+                }
+                let _ = writeln!(
+                    stderr,
+                    "[watch] next update in {}s — Ctrl+C to stop",
+                    interval.as_secs()
+                );
+            }
+            Err(e) => {
+                let _ = writeln!(stderr, "[watch] module {} failed: {e}", module.name());
+            }
+        }
+
+        let _ = stdout.flush();
+        std::thread::sleep(interval);
+    }
 }
 
 fn command_to_module_config(cli: &Cli) -> anyhow::Result<(String, ModuleConfig)> {
@@ -248,6 +294,7 @@ fn command_to_module_config(cli: &Cli) -> anyhow::Result<(String, ModuleConfig)>
 }
 
 fn run_all_and_output(cli: &Cli, format: &rustwhy::cli::OutputFormat) -> anyhow::Result<()> {
+    let _ = format; // Format flag is currently informational; honor --json
     let config = ModuleConfig {
         verbose: cli.verbose,
         watch: false,
@@ -283,7 +330,7 @@ fn run_all_and_output(cli: &Cli, format: &rustwhy::cli::OutputFormat) -> anyhow:
                 continue;
             }
             match rt.block_on(run_module(module.clone(), &config)) {
-                Ok(report) => write_report_terminal(&mut stdout, &report, !cli.no_color),
+                Ok(report) => write_report_terminal(&mut stdout, &report, !cli.no_color)?,
                 Err(e) => {
                     eprintln!("Module {} failed: {}", module.name(), e);
                 }

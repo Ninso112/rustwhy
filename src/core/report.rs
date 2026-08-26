@@ -111,3 +111,51 @@ impl DiagnosticReport {
         self.metrics.push(metric);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_report_defaults() {
+        let report = DiagnosticReport::new("cpu", "ok");
+        assert_eq!(report.module, "cpu");
+        assert_eq!(report.summary, "ok");
+        assert_eq!(report.overall_severity, Severity::Ok);
+        assert!(report.findings.is_empty());
+        assert!(report.recommendations.is_empty());
+        assert!(report.metrics.is_empty());
+    }
+
+    #[test]
+    fn add_finding_raises_severity() {
+        let mut report = DiagnosticReport::new("cpu", "ok");
+        report.add_finding(Finding {
+            severity: Severity::Warning,
+            category: "cpu".into(),
+            message: "high".into(),
+            details: None,
+        });
+        assert_eq!(report.overall_severity, Severity::Warning);
+        assert_eq!(report.findings.len(), 1);
+    }
+
+    #[test]
+    fn compute_overall_severity_picks_max() {
+        let mut report = DiagnosticReport::new("cpu", "ok");
+        report.add_finding(Finding {
+            severity: Severity::Info,
+            category: "cpu".into(),
+            message: "info".into(),
+            details: None,
+        });
+        report.add_finding(Finding {
+            severity: Severity::Critical,
+            category: "cpu".into(),
+            message: "crit".into(),
+            details: None,
+        });
+        report.compute_overall_severity();
+        assert_eq!(report.overall_severity, Severity::Critical);
+    }
+}

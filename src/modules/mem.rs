@@ -116,7 +116,7 @@ impl DiagnosticModule for MemModule {
                 critical: 95.0,
             }),
         });
-        if config.extra_args.get("swap").is_none_or(|s| s == "true") {
+        if config.extra_args.get("swap").is_some_and(|s| s == "true") {
             let swap_used_kb = swap_total_kb.saturating_sub(swap_free_kb);
             if swap_total_kb > 0 {
                 #[allow(clippy::cast_precision_loss)]

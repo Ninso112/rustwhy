@@ -83,10 +83,9 @@ impl DiagnosticModule for BootModule {
         // systemd-analyze blame – slow services (>1s)
         let top_n = config.top_n;
         if let Ok(out) = run_cmd(&["systemd-analyze", "blame", "--no-pager"]) {
-            let re = Regex::new(r"^\s*(\d+\.?\d*)(ms|s|min)\s+(.+)\.service").ok();
-            let mut entries: Vec<(f64, String)> = Vec::new();
-            for line in out.lines() {
-                if let Some(ref re) = re {
+            if let Ok(re) = Regex::new(r"^\s*(\d+\.?\d*)(ms|s|min)\s+(.+)\.service") {
+                let mut entries: Vec<(f64, String)> = Vec::new();
+                for line in out.lines() {
                     if let Some(cap) = re.captures(line) {
                         let value: f64 = cap
                             .get(1)
@@ -108,15 +107,15 @@ impl DiagnosticModule for BootModule {
                         }
                     }
                 }
-            }
-            entries.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
-            for (secs, name) in entries.into_iter().take(top_n) {
-                report.add_finding(Finding {
-                    severity: if secs > 5.0 { Severity::Warning } else { Severity::Info },
-                    category: "service".into(),
-                    message: format!("{name} took {secs:.2}s to start"),
-                    details: Some(format!("Consider masking or disabling if not needed: systemctl disable {name}.service")),
-                });
+                entries.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
+                for (secs, name) in entries.into_iter().take(top_n) {
+                    report.add_finding(Finding {
+                        severity: if secs > 5.0 { Severity::Warning } else { Severity::Info },
+                        category: "service".into(),
+                        message: format!("{name} took {secs:.2}s to start"),
+                        details: Some(format!("Consider masking or disabling if not needed: systemctl disable {name}.service")),
+                    });
+                }
             }
         }
 

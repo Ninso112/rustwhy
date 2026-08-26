@@ -126,16 +126,17 @@ impl DiagnosticModule for BattModule {
                 message: "No battery device found in /sys/class/power_supply.".into(),
                 details: Some("This is normal on desktops or when battery is not exposed.".into()),
             });
-        } else if report.findings.is_empty() {
-            report.summary = "Battery status OK.".into();
+        } else {
+            if report.findings.is_empty() {
+                report.summary = "Battery status OK.".into();
+            }
+            report.add_recommendation(Recommendation {
+                priority: 3,
+                action: "Use 'upower -i' or 'tlp-stat' for detailed power info.".into(),
+                command: Some("upower -i /org/freedesktop/UPower/devices/battery_BAT0".into()),
+                explanation: "Upower provides charge cycles and time to empty.".into(),
+            });
         }
-
-        report.add_recommendation(Recommendation {
-            priority: 3,
-            action: "Use 'upower -i' or 'tlp-stat' for detailed power info.".into(),
-            command: Some("upower -i /org/freedesktop/UPower/devices/battery_BAT0".into()),
-            explanation: "Upower provides charge cycles and time to empty.".into(),
-        });
 
         report.compute_overall_severity();
         Ok(report)
